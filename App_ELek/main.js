@@ -775,12 +775,27 @@ ipcMain.handle('db-zaloz', async (e, cfg) => {
 });
 
 const MARIADB_VERZE = '11.4.5';
-const MARIADB_URL = `https://archive.mariadb.org/mariadb-${MARIADB_VERZE}/winx64-packages/mariadb-${MARIADB_VERZE}-winx64.zip`;
+const MARIADB_URL = process.platform === 'win32'
+    ? `https://archive.mariadb.org/mariadb-${MARIADB_VERZE}/winx64-packages/mariadb-${MARIADB_VERZE}-winx64.zip`
+    : `https://archive.mariadb.org/mariadb-${MARIADB_VERZE}/bintar-linux-systemd-x86_64/mariadb-${MARIADB_VERZE}-linux-systemd-x86_64.tar.gz`;
+const MARIADB_VELIKOST = process.platform === 'win32' ? '~90 MB' : '~350 MB';
 const DB_DIR = path.join(KONFIG_DIR, 'mariadb');
 const DB_DATA_DIR = path.join(KONFIG_DIR, 'mariadb-data');
+const DB_SOCKET = path.join(KONFIG_DIR, 'mariadb.sock');
 let dbProces = null;
 
-function dbMysqld() { return path.join(DB_DIR, 'bin', 'mysqld.exe'); }
+function dbBinarka(nazvy) {
+    for (const n of nazvy) {
+        const cesta = path.join(DB_DIR, 'bin', n);
+        if (fs.existsSync(cesta)) return cesta;
+    }
+    return path.join(DB_DIR, 'bin', nazvy[0]);
+}
+function dbMysqld() {
+    return process.platform === 'win32'
+        ? path.join(DB_DIR, 'bin', 'mysqld.exe')
+        : dbBinarka(['mariadbd', 'mysqld']);
+}
 function dbNainstalovana() { return fs.existsSync(dbMysqld()); }
 
 function stahniSoubor(url, cil, priebeh, presmerovani = 0) {
@@ -845,15 +860,22 @@ function spustDatabazi() {
     if (dbProces || !dbNainstalovana()) return !!dbProces;
     const es = ctiEnvFile(SERVER_ENV_PATH);
     const port = Number(es.DB_PORT) || 3306;
-    dbProces = spawn(dbMysqld(), [
+    const argumenty = [
         '--basedir=' + DB_DIR,
         '--datadir=' + DB_DATA_DIR,
         '--port=' + port,
-        '--bind-address=127.0.0.1',
-        '--console'
-    ], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+        '--bind-address=127.0.0.1'
+    ];
+    if (process.platform === 'win32') {
+        argumenty.push('--console');
+    } else {
+        argumenty.push('--socket=' + DB_SOCKET);
+        if (typeof process.getuid === 'function' && process.getuid() === 0) argumenty.push('--user=root');
+    }
+    dbProces = spawn(dbMysqld(), argumenty, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     dbProces.stdout.on('data', d => console.log('[db]', String(d).trim()));
     dbProces.stderr.on('data', d => console.log('[db]', String(d).trim()));
+    dbProces.on('error', err => { console.log('[db] nejde spustit:', err.message); dbProces = null; });
     dbProces.on('exit', kod => { console.log('[db] skoncila, kod', kod); dbProces = null; });
     return true;
 }
@@ -861,7 +883,9 @@ function spustDatabazi() {
 async function zastavDatabazi() {
     if (!dbProces) return;
     const es = ctiEnvFile(SERVER_ENV_PATH);
-    const mysqladmin = path.join(DB_DIR, 'bin', 'mysqladmin.exe');
+    const mysqladmin = process.platform === 'win32'
+        ? path.join(DB_DIR, 'bin', 'mysqladmin.exe')
+        : dbBinarka(['mariadb-admin', 'mysqladmin']);
     try {
         await spustPrikaz(mysqladmin, [
             '-u', es.DB_USER || 'root',
@@ -877,39 +901,60 @@ async function zastavDatabazi() {
 }
 
 ipcMain.handle('db-instaluj', async (e) => {
-    if (process.platform !== 'win32') throw new Error('Automatická instalace databáze je zatím jen pro Windows.');
+    if (process.platform === 'darwin') throw new Error('Automatická instalace databáze na macOS zatím není – nainstalujte MariaDB třeba přes Homebrew a vyplňte připojení níže.');
+    if (process.platform !== 'win32' && process.arch !== 'x64') throw new Error('Automatická instalace na Linuxu funguje jen na procesorech x86_64. Na ARM (třeba Raspberry Pi) nainstalujte balíček mariadb-server a vyplňte připojení níže.');
     const hlas = (text, procenta) => { try { e.sender.send('db-instalace-stav', { text, procenta }); } catch (er) {}; console.log('[db-instalace]', text); };
 
     const port = await volnyPort(3306);
     const heslo = crypto.randomBytes(12).toString('base64url');
 
     if (!dbNainstalovana()) {
-        const zip = path.join(KONFIG_DIR, 'mariadb.zip');
-        hlas('Stahuji MariaDB ' + MARIADB_VERZE + ' (~90 MB)…', 0);
-        await stahniSoubor(MARIADB_URL, zip, p => hlas('Stahuji MariaDB… ' + p + ' %', p));
+        const archiv = path.join(KONFIG_DIR, process.platform === 'win32' ? 'mariadb.zip' : 'mariadb.tar.gz');
+        hlas('Stahuji MariaDB ' + MARIADB_VERZE + ' (' + MARIADB_VELIKOST + ')…', 0);
+        await stahniSoubor(MARIADB_URL, archiv, p => hlas('Stahuji MariaDB… ' + p + ' %', p));
 
         hlas('Rozbaluji…', null);
         const rozbaleno = path.join(KONFIG_DIR, 'mariadb-rozbaleni');
         fs.rmSync(rozbaleno, { recursive: true, force: true });
-        await spustPrikaz('powershell', ['-NoProfile', '-Command',
-            `Expand-Archive -LiteralPath '${zip}' -DestinationPath '${rozbaleno}' -Force`]);
+        fs.mkdirSync(rozbaleno, { recursive: true });
+        if (process.platform === 'win32') {
+            await spustPrikaz('powershell', ['-NoProfile', '-Command',
+                `Expand-Archive -LiteralPath '${archiv}' -DestinationPath '${rozbaleno}' -Force`]);
+        } else {
+            await spustPrikaz('tar', ['-xzf', archiv, '-C', rozbaleno]);
+        }
         const vnitrek = fs.readdirSync(rozbaleno).find(s => s.startsWith('mariadb'));
         if (!vnitrek) throw new Error('Rozbalený archiv nemá očekávaný obsah.');
         fs.rmSync(DB_DIR, { recursive: true, force: true });
         fs.renameSync(path.join(rozbaleno, vnitrek), DB_DIR);
         fs.rmSync(rozbaleno, { recursive: true, force: true });
-        fs.rmSync(zip, { force: true });
+        fs.rmSync(archiv, { force: true });
     } else {
         hlas('MariaDB už je stažená, přeskakuji stahování.', null);
     }
 
+    let prvniInicializace = false;
     if (!fs.existsSync(path.join(DB_DATA_DIR, 'mysql'))) {
+        prvniInicializace = true;
         hlas('Připravuji datové soubory a účet…', null);
         fs.mkdirSync(DB_DATA_DIR, { recursive: true });
-        await spustPrikaz(path.join(DB_DIR, 'bin', 'mysql_install_db.exe'), [
-            '--datadir=' + DB_DATA_DIR,
-            '--password=' + heslo
-        ]);
+        if (process.platform === 'win32') {
+            await spustPrikaz(path.join(DB_DIR, 'bin', 'mysql_install_db.exe'), [
+                '--datadir=' + DB_DATA_DIR,
+                '--password=' + heslo
+            ]);
+        } else {
+            const skript = ['mariadb-install-db', 'mysql_install_db']
+                .map(n => path.join(DB_DIR, 'scripts', n))
+                .find(fs.existsSync);
+            if (!skript) throw new Error('V balíčku chybí inicializační skript databáze.');
+            await spustPrikaz(skript, [
+                '--basedir=' + DB_DIR,
+                '--datadir=' + DB_DATA_DIR,
+                '--auth-root-authentication-method=normal',
+                '--skip-test-db'
+            ], { cwd: DB_DIR });
+        }
         zapisEnvFile(SERVER_ENV_PATH, { DB_HOST: '127.0.0.1', DB_PORT: port, DB_USER: 'root', DB_PASSWORD: heslo, DB_NAME: 'evidence_navstev' });
     } else {
         hlas('Datové soubory už existují, použije se dřívější účet.', null);
@@ -919,8 +964,24 @@ ipcMain.handle('db-instaluj', async (e) => {
     hlas('Spouštím databázi…', null);
     spustDatabazi();
     if (!(await pockejNaPort(Number(ctiEnvFile(SERVER_ENV_PATH).DB_PORT) || port))) {
-        throw new Error('Databáze se nepodařilo nastartovat – zkuste to znovu, případně restartujte počítač.');
+        throw new Error(process.platform === 'win32'
+            ? 'Databáze se nepodařilo nastartovat – zkuste to znovu, případně restartujte počítač.'
+            : 'Databáze se nepodařilo nastartovat. Zkuste to znovu; pokud se to opakuje, doinstalujte systémové knihovny příkazem: sudo apt install libaio1 libncurses6');
     }
+
+    if (prvniInicializace && process.platform !== 'win32') {
+        hlas('Nastavuji heslo účtu…', null);
+        const mysql = require('mysql2/promise');
+        const skutecnyPort = Number(ctiEnvFile(SERVER_ENV_PATH).DB_PORT) || port;
+        const conn = await mysql.createConnection({ host: '127.0.0.1', port: skutecnyPort, user: 'root', password: '', connectTimeout: 8000 });
+        const [ucty] = await conn.query("SELECT Host FROM mysql.user WHERE User = 'root'");
+        for (const u of ucty) {
+            await conn.query("SET PASSWORD FOR 'root'@" + conn.escape(u.Host) + " = PASSWORD(" + conn.escape(heslo) + ")");
+        }
+        await conn.query('FLUSH PRIVILEGES');
+        await conn.end();
+    }
+
     const es = ctiEnvFile(SERVER_ENV_PATH);
     hlas('Databáze běží.', 100);
     return { host: '127.0.0.1', port: Number(es.DB_PORT) || port, user: es.DB_USER || 'root', password: es.DB_PASSWORD || heslo, database: es.DB_NAME || 'evidence_navstev' };
