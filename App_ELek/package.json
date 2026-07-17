@@ -1,0 +1,91 @@
+{
+  "name": "guestbook",
+  "desktopName": "GuestBook",
+  "homepage": "localhost",
+  "version": "1.0.0",
+  "description": "GuestBook – kniha navstev: kiosek, server a sprava v jedne aplikaci",
+  "main": "main.js",
+  "author": "LINTECH, spol. s r.o.",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "scripts": {
+    "start": "electron .",
+    "pruvodce": "electron . --pruvodce",
+    "sprava": "electron . --sprava",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux",
+    "dist": "electron-builder",
+    "nastaveni": "electron . --nastaveni"
+  },
+  "dependencies": {
+    "@wacom/signature-sdk": "^2.1.1",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mysql2": "^3.22.3",
+    "cors": "^2.8.6"
+  },
+  "devDependencies": {
+    "electron": "^42.2.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "cz.lintech.guestbook",
+    "productName": "GuestBook",
+    "artifactName": "LINTECH-Kiosek-${version}-${os}.${ext}",
+    "files": [
+      "main.js",
+      "pruvodce.html",
+      "nastaveni.html",
+      ".env",
+      "www/**/*",
+      "node_modules/**/*",
+      "!node_modules/.cache"
+    ],
+    "extraResources": [
+      {
+        "from": "../API_Server",
+        "to": "API_Server",
+        "filter": [
+          "**/*",
+          "!node_modules/.cache",
+          "!signatures/*",
+          "!.env",
+          "!*.fss",
+          "!admin_runtime"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "GuestBook",
+      "language": "1029",
+      "deleteAppDataOnUninstall": true,
+      "runAfterFinish": true,
+      "include": "build/installer.nsh"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Office",
+      "icon": "build/ikona.png",
+      "maintainer": "LINTECH"
+    }
+  }
+}

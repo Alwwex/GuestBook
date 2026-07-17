@@ -1,0 +1,2123 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LINTECH | Recepční systém</title>
+    
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --blue:   #00205B;
+            --blue-2: #002a75;
+            --cyan:   #67D2DF;
+            --red:    #EE2737;
+            --ink:    #454142;
+            --paper:  #F4F6F9;
+            --line:   #E3E8EF;
+            --ok:     #1f9d55;
+            --radius: 14px;
+            --shadow: 0 18px 50px rgba(0,32,91,.10);
+        }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; }
+        body {
+            font-family: 'Funnel Display', 'Segoe UI', Roboto, sans-serif;
+            background: var(--paper); color: var(--ink);
+            margin: 0; padding: 0; overflow: hidden; user-select: none; touch-action: none;
+            -webkit-font-smoothing: antialiased;
+           
+            display: flex; flex-direction: column;
+        }
+        html { zoom: 1.15; }
+        @media (max-width: 1400px) { html { zoom: 1.25; } }
+        @media (max-width: 1100px) { html { zoom: 1.35; } }
+        @media (max-width: 900px)  { html { zoom: 1.45; } }
+        @media (max-width: 820px) {
+            .header { padding: 0 20px; height: 72px; }
+            .main-container { padding: 14px 14px 26px; }
+            .grid-menu { grid-template-columns: 1fr; gap: 14px; }
+            .rules-split { flex-direction: column; gap: 16px; overflow-y: auto; }
+            .rules-left-col, .rules-right-col { flex: none; width: 100%; max-width: none; }
+            .arrival-split { flex-direction: column; gap: 16px; overflow-y: auto; }
+            .departure-grid { grid-template-columns: 1fr; }
+            .admin-stats { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 520px) {
+            .admin-stats { grid-template-columns: 1fr; }
+            .visitor-row { flex-wrap: wrap; }
+        }
+
+        .plus { position: relative; display: inline-block; width: .62em; height: .62em; vertical-align: middle; }
+        .plus::before, .plus::after { content: ""; position: absolute; border-radius: .5px; }
+        .plus::before { left: 46%; top: 0; width: 8%; height: 100%;
+            background: linear-gradient(to bottom, var(--red) 0 38%, transparent 38% 62%, var(--red) 62% 100%); }
+        .plus::after { top: 46%; left: 0; height: 8%; width: 100%;
+            background: linear-gradient(to right, var(--red) 0 38%, transparent 38% 62%, var(--red) 62% 100%); }
+
+        .header {
+            background: #fff; padding: 0 42px; display: flex; justify-content: space-between; align-items: center;
+            height: 84px; border-bottom: 1px solid var(--line); position: relative; z-index: 5; flex-shrink: 0;
+        }
+        .header::after { content:""; position:absolute; left:0; bottom:-1px; height:3px; width:150px; background:var(--red); }
+        .logo img { height: 38px; object-fit: contain; display: block; }
+        .claim { font-size: 15px; font-weight: 600; color: var(--blue); letter-spacing: .2px; display:flex; align-items:center; gap:8px; }
+
+        .main-container { display: flex; justify-content: center; align-items: stretch; flex: 1; min-height: 0; padding: 22px 26px 34px; }
+        .card {
+            background: #fff; padding: 34px 44px; border-radius: 20px; box-shadow: var(--shadow);
+            width: 100%; max-width: none; display: none; flex-direction: column;
+            border: 1px solid var(--line); overflow: hidden;
+        }
+        .card.active { display: flex; animation: cardIn .26s ease; }
+        @keyframes cardIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+        h2 {
+            margin: 0 0 22px; color: var(--blue); font-size: 32px; font-weight: 700; letter-spacing: -.4px;
+            padding-bottom: 16px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 14px; flex-shrink: 0;
+        }
+        h2 .plus { width: 20px; height: 20px; }
+
+        #screen-home { position: relative; }
+        .home-hero { text-align:center; margin: 4vh 0 3vh; flex-shrink:0; }
+        .home-hero h1 { margin:0; font-size: clamp(34px, 4.2vw, 56px); color: var(--blue); font-weight: 800; letter-spacing: -1px; }
+        .home-hero p { margin:12px 0 0; font-size: clamp(16px, 1.5vw, 21px); color:#6b7482; }
+        .grid-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; flex: 1; align-content: stretch; max-width: 1150px; width:100%; margin: 0 auto; }
+        .menu-btn {
+            background: #fff; border: 1.5px solid var(--line); border-radius: var(--radius); padding: 40px 34px;
+            font-family: inherit; cursor: pointer; text-align: left; position: relative; overflow: hidden;
+            transition: transform .18s ease, border-color .18s, background .18s, color .18s;
+            display:flex; flex-direction:column; justify-content:center; gap:10px;
+        }
+        .menu-btn b { font-size: clamp(22px, 2vw, 30px); font-weight: 700; color: var(--blue); transition: color .18s; }
+        .menu-btn span { font-size: clamp(14px, 1.2vw, 17px); color: #6b7482; transition: color .18s; }
+        .menu-btn::after { content:""; position:absolute; right:24px; top:24px; width:18px; height:18px;
+            background:
+              linear-gradient(var(--red),var(--red)) center/100% 12% no-repeat,
+              linear-gradient(var(--red),var(--red)) center/12% 100% no-repeat;
+            opacity:.35; transition:opacity .18s; }
+        .menu-btn:hover, .menu-btn:active { border-color: var(--blue); background: var(--blue); transform: translateY(-4px); box-shadow: 0 16px 36px rgba(0,32,91,.18); }
+        .menu-btn:hover b, .menu-btn:hover span, .menu-btn:active b, .menu-btn:active span { color:#fff; }
+        .menu-btn:hover::after { opacity:1; }
+        .menu-btn.leave { grid-column: 1 / -1; flex-direction:row; align-items:center; justify-content:space-between; padding: 28px 34px; }
+        .menu-btn.leave:hover, .menu-btn.leave:active { background: var(--red); border-color: var(--red); }
+
+        .form-wrap { max-width: 860px; width:100%; margin: 0 auto; flex:1; display:flex; flex-direction:column; }
+        .input-group { margin-bottom: 18px; position: relative; width: 100%; }
+        label { display: block; margin-bottom: 7px; font-weight: 600; font-size: 14px; color: var(--ink); letter-spacing: .2px; }
+        input, textarea {
+            width: 100%; padding: 15px 46px 15px 17px; border: 1.5px solid var(--line); border-radius: 11px; font-size: 17px;
+            font-family: inherit; color: var(--blue); background: #fbfcfe; transition: border-color .15s, box-shadow .15s;
+        }
+        textarea { padding-right: 17px; }
+        input:focus, textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 4px rgba(0,32,91,.10); background:#fff; }
+        input::placeholder { color: #aab2bd; }
+        .field-hint { min-height: 18px; font-size: 12.5px; margin-top: 5px; color:#8a929e; transition: color .15s; }
+        .input-group.ok input { border-color: #bfe9d2; background:#fbfffd; }
+        .input-group.ok .field-hint { color: #0e6b39; }
+        .input-group.bad input { border-color: #f3b3ba; background:#fffafa; }
+        .input-group.bad .field-hint { color: #a11624; }
+        .field-mark { position:absolute; right:15px; top:41px; width:20px; height:20px; border-radius:50%;
+            display:none; align-items:center; justify-content:center; font-size:12px; color:#fff; font-weight:700; }
+        .input-group.ok .field-mark { display:flex; background:#1f9d55; }
+        .input-group.ok .field-mark::before { content:"✓"; }
+        .input-group.bad .field-mark { display:flex; background:var(--red); }
+        .input-group.bad .field-mark::before { content:"!"; }
+
+        .btn {
+            padding: 15px 32px; border: none; border-radius: 11px; font-weight: 600; cursor: pointer; font-family: inherit;
+            transition: filter .15s, transform .15s, background .15s, color .15s; font-size: 16.5px; letter-spacing: .2px;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:disabled { opacity:.5; cursor: default; transform:none; }
+        .btn-red { background: var(--red); color: #fff; }
+        .btn-blue { background: var(--blue); color: #fff; }
+        .btn-green { background: var(--ok); color: #fff; }
+        .btn-outline { background: #fff; border: 1.5px solid var(--line); color: var(--ink); }
+        .btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+
+        .rules-split { display: flex; gap: 26px; flex: 1; width: 100%; align-items: stretch; min-height: 0; }
+        .rules-left-col { flex: 1.35; display: flex; flex-direction: column; min-height: 0; }
+        .rules-right-col { flex: .65; max-width: 560px; display: none; flex-direction: column; align-items: center;
+            border: 1.5px solid var(--line); border-radius: var(--radius); padding: 22px 26px; background: #fff; overflow-y:auto; }
+        .rules-right-col.show { display:flex; }
+        .rules-right-col h3 { margin:0 0 4px; color:var(--blue); font-size:21px; align-self:flex-start; }
+        .rules-right-col .sig-sub { align-self:flex-start; color:#6b7482; font-size:14px; margin:0 0 14px; }
+
+        .rules-stage { flex:1; min-height:0; background: var(--paper); border:1px solid var(--line); border-radius: var(--radius);
+            display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative; }
+        .rule-page { display:none; width:100%; height:100%; overflow-y:auto; padding: 34px 44px; }
+        .rule-page.active { display:block; animation: pageIn .28s ease both; }
+        @keyframes pageIn { from { opacity:0; transform: translateX(16px); } to { opacity:1; transform:none; } }
+        .rule-page.is-image { padding: 16px 18px; display:none; overflow-y:auto; overflow-x:auto; }
+        .rule-page.is-image.active { display:block; }
+        .rule-page.is-image img { width:100%; height:auto; max-width:none; max-height:none; display:block; margin:0 auto;
+            border-radius:8px; box-shadow: 0 6px 24px rgba(0,32,91,.12); background:#fff; transition: width .18s ease; }
+        .rules-zoom { position:absolute; right:16px; bottom:16px; display:none; gap:8px; z-index:5; }
+        .rules-zoom.show { display:flex; }
+        .rules-zoom button { min-width:52px; height:52px; padding:0 12px; border-radius:12px; border:1px solid var(--line);
+            background:rgba(255,255,255,.95); color:var(--blue); font-size:24px; font-weight:700; cursor:pointer;
+            box-shadow:0 4px 14px rgba(0,32,91,.16); font-family:inherit; }
+        .rules-zoom button:active { transform:scale(.94); }
+        .rules-zoom .rz-info { font-size:15px; }
+        .rule-page h1, .rule-page h2, .rule-page h3 { color: var(--blue); border:none; padding:0; }
+        .rule-page p { font-size: 17.5px; line-height: 1.7; }
+
+        .rules-controls { display:flex; align-items:center; gap:18px; margin-top: 14px; flex-shrink:0; }
+        .rules-progress { flex:1; display:flex; flex-direction:column; gap:7px; }
+        .rules-progress small { color:#6b7482; font-weight:600; letter-spacing:.3px; }
+        .rules-bar { height:6px; border-radius:99px; background:var(--line); overflow:hidden; }
+        .rules-bar i { display:block; height:100%; width:0; background: linear-gradient(90deg, var(--blue), var(--cyan)); border-radius:99px; transition: width .25s ease; }
+
+        .signature-box { width:100%; }
+        canvas.sigpad {
+            background: #fff; border: 1.5px dashed #c7d0dd; border-radius: 12px; width: 100%; height: auto;
+            aspect-ratio: 500 / 220; touch-action: none; cursor: crosshair; display:block;
+        }
+        .sig-line { position:relative; }
+        .sig-line::after { content:"✕"; position:absolute; left:18px; bottom:26%; color:#c7d0dd; font-size:15px; pointer-events:none; }
+
+        .wacom-status { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-radius: 9px; font-size: 13px; font-weight: 600; margin: 10px 0 12px; border: 1px solid transparent; width:100%; }
+        .wacom-status.connected { background: #e7f7ef; color: #0e6b39; border-color: #bfe9d2; }
+        .wacom-status.disconnected { background: #eef2f8; color: #5b6674; border-color: var(--line); }
+        .wacom-status.error { background: #fdeaec; color: #a11624; border-color: #f6c9ce; }
+        .wacom-dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+        .wacom-chip { display:flex; align-items:center; gap:8px; padding:8px 14px; border-radius:999px; font-size:13px; font-weight:600; border:1px solid var(--line); }
+        .wacom-chip i { width:9px; height:9px; border-radius:50%; }
+        .wacom-chip.on  { color:#0e6b39; background:#e7f7ef; border-color:#bfe9d2; }
+        .wacom-chip.on i { background:#1f9d55; box-shadow:0 0 0 4px rgba(31,157,85,.15); }
+        .wacom-chip.off { color:#a11624; background:#fdeaec; border-color:#f6c9ce; }
+        .wacom-chip.off i { background:var(--red); box-shadow:0 0 0 4px rgba(238,39,55,.12); }
+
+        .arrival-split { display:flex; gap:30px; flex:1; min-height:0; align-items:stretch; }
+        .arrival-info { flex:1; display:flex; flex-direction:column; justify-content:center; gap:22px; min-width:0; }
+        .arrival-person { background: var(--paper); border:1px solid var(--line); border-left:5px solid var(--blue);
+            border-radius: var(--radius); padding: 26px 30px; }
+        .arrival-person h3 { margin:0; font-size: clamp(24px, 2.4vw, 34px); color:var(--blue); font-weight:700; }
+        .arrival-person p { margin:8px 0 0; font-size: clamp(15px, 1.3vw, 18px); color:#6b7482; }
+        .arrival-note { font-size: clamp(15px, 1.25vw, 18px); line-height:1.65; color:var(--ink); }
+        .arrival-note b { color: var(--blue); }
+        .arrival-sig { flex:1; max-width: 620px; display:flex; flex-direction:column; justify-content:center; border:1.5px solid var(--line); border-radius:var(--radius); padding: 24px 28px; }
+        .arrival-sig h3 { margin:0 0 2px; color:var(--blue); font-size:21px; }
+        .arrival-sig .sig-sub { color:#6b7482; font-size:14px; margin:0 0 12px; }
+
+        .departure-sub { text-align:center; color:#6b7482; font-size: clamp(16px, 1.4vw, 20px); margin: -8px 0 18px; flex-shrink:0; }
+        .departure-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(480px, 1fr)); gap: 20px; overflow-y: auto; padding: 6px; flex:1; align-content:start; }
+        .visitor-row { background: #fff; padding: 26px 28px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; gap: 18px;
+            border: 1.5px solid var(--line); border-left: 6px solid var(--red); box-shadow: 0 6px 18px rgba(0,32,91,.05); transition: transform .15s ease, box-shadow .15s ease; }
+        .visitor-row:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,32,91,.10); }
+        .visitor-avatar { width: 62px; height: 62px; border-radius: 50%; background: var(--blue); color:#fff; display:flex; align-items:center; justify-content:center;
+            font-size: 24px; font-weight: 700; flex-shrink: 0; letter-spacing: .5px; }
+        .visitor-row .visitor-info { flex: 1; min-width: 0; }
+        .visitor-row h4 { margin: 0; font-size: clamp(24px, 2vw, 30px); color: var(--blue); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .visitor-row .visitor-meta { margin: 6px 0 0; font-size: clamp(15px, 1.2vw, 17px); color: #6b7482; }
+        .visitor-row .btn-leave { border: 2px solid var(--red); color: var(--red); background:#fff; padding: 16px 30px; font-size: 18px; border-radius: 12px; flex-shrink:0; }
+        .visitor-row .btn-leave:hover { background: var(--red); color: #fff; }
+
+        .suggestions-box { position: absolute; background: #fff; border: 1px solid var(--line); width: 100%; z-index: 100; box-shadow: var(--shadow); border-radius: 0 0 11px 11px; display: none; max-height: 240px; overflow-y: auto; }
+        .suggestion-item { padding: 15px 18px; cursor: pointer; border-bottom: 1px solid var(--line); font-size: 16.5px; }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item small { display:block; color:#8a929e; font-size:13px; margin-top:2px; }
+        .suggestion-item:hover { background: var(--blue); color: #fff; }
+        .suggestion-item:hover small { color:#c9d4e6; }
+
+        .kiosk-alert-overlay { display: none; position: fixed; inset: 0; background: rgba(0,32,91,.86); justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(3px); }
+        .kiosk-alert-box { background: #fff; padding: 38px; border-radius: 18px; text-align: center; max-width: 560px; width: 90%; border-top: 5px solid var(--red); box-shadow: var(--shadow); }
+        .kiosk-alert-box h3 { margin-top: 0; color: var(--blue); font-size: 25px; font-weight: 700; }
+
+        .fx-overlay { display:none; position:fixed; inset:0; z-index:3000; flex-direction:column; align-items:center; justify-content:center;
+            text-align:center; color:var(--blue); background: var(--paper); overflow:hidden; }
+        .fx-overlay .big-plus { position:absolute; right:6vw; bottom:10vh; width:120px; height:120px; opacity:.9; }
+        .fx-overlay .big-plus::before, .fx-overlay .big-plus::after { content:""; position:absolute; }
+        .fx-overlay .big-plus::before { left:47%; top:0; width:6%; height:100%;
+            background: linear-gradient(to bottom, var(--red) 0 40%, transparent 40% 60%, var(--red) 60% 100%); }
+        .fx-overlay .big-plus::after { top:47%; left:0; height:6%; width:100%;
+            background: linear-gradient(to right, var(--red) 0 40%, transparent 40% 60%, var(--red) 60% 100%); }
+        .fx-overlay h1 { font-size: clamp(52px, 7.5vw, 110px); margin: 0 0 18px; font-weight: 700; letter-spacing: -2px; color: var(--blue); }
+        .fx-overlay h1 .plus { width:.34em; height:.34em; margin-left:.12em; vertical-align: baseline; }
+        .fx-overlay p { font-size: clamp(18px, 2vw, 26px); color:#6b7482; max-width:820px; line-height:1.5; margin:0; }
+        .fx-badge { display:none; }
+        .tc-ring { fill:none; stroke:var(--ok); stroke-width:6; stroke-dasharray:327; stroke-dashoffset:327; }
+        .tc-mark { fill:none; stroke:var(--ok); stroke-width:9; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:110; stroke-dashoffset:110; }
+        .fx-overlay.play h1 { animation: rise .6s cubic-bezier(.2,.7,.3,1) .05s both; }
+        .fx-overlay.play p  { animation: rise .6s cubic-bezier(.2,.7,.3,1) .22s both; }
+        .fx-overlay.play .big-plus { animation: rise .7s ease .35s both; }
+        @keyframes dash { to { stroke-dashoffset: 0; } }
+        @keyframes rise { from { opacity:0; transform: translateY(18px); } to { opacity:1; transform:none; } }
+        .fx-progress { position:absolute; bottom:0; left:0; height:5px; width:100%; background:var(--line); }
+        .fx-progress i { display:block; height:100%; width:100%; background:var(--red); transform-origin:left; }
+        .fx-overlay.play .fx-progress i { animation: shrink var(--fx-sec,6s) linear forwards; }
+        @keyframes shrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+        @keyframes pinShake { 0%,100%{transform:none} 25%{transform:translateX(-9px)} 75%{transform:translateX(9px)} }
+        .fx-hint { position:absolute; bottom:22px; font-size:14px; color:#9aa4b1; letter-spacing:.4px; }
+
+        .pin-key { padding: 18px 0; font-size: 22px; font-weight: 700; }
+        .pin-dot { width:16px; height:16px; border-radius:50%; border:2px solid var(--line); }
+        .pin-dot.full { background: var(--blue); border-color: var(--blue); }
+
+        .admin-nav { display: flex; gap: 10px; margin-bottom: 18px; border-bottom: 1px solid var(--line); padding-bottom: 12px; flex-shrink: 0; flex-wrap: wrap; }
+        .admin-tab { padding: 11px 20px; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; background: var(--paper); border-radius: 9px; border: 1px solid var(--line); color: var(--ink); }
+        .admin-tab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+        .admin-section { display: none; }
+        .admin-section.active { display: block; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+        .data-table th, .data-table td { border: 1px solid var(--line); padding: 10px 11px; text-align: left; }
+        .data-table th { background: var(--blue); color: #fff; font-weight: 600; }
+        .admin-sig-img { height: 42px; background: #fff; border: 1px solid var(--line); border-radius: 4px; padding: 2px; }
+
+        .admin-stats { display:grid; grid-template-columns: repeat(4, 1fr); gap:14px; margin-bottom:18px; flex-shrink:0; }
+        .stat-card { background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:15px 18px; }
+        .stat-card b { display:block; font-size:29px; color:var(--blue); font-weight:700; letter-spacing:-.5px; }
+        .stat-card span { font-size:13px; color:#7a828e; }
+
+        .pages-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap:14px; margin-top:12px; }
+        .page-tile { background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; }
+        .page-tile .thumb { height:150px; background:var(--paper); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+        .page-tile .thumb img { width:100%; height:100%; object-fit:cover; }
+        .page-tile .thumb .txt { padding:12px 14px; font-size:12px; color:#5b6674; line-height:1.45; max-height:100%; overflow:hidden; width:100%; }
+        .page-tile footer { display:flex; align-items:center; gap:6px; padding:9px 10px; border-top:1px solid var(--line); }
+        .page-tile footer b { flex:1; font-size:13px; color:var(--blue); }
+        .tile-btn { border:1px solid var(--line); background:#fff; border-radius:7px; width:32px; height:30px; cursor:pointer; font-size:14px; color:#5b6674; }
+        .tile-btn:hover { border-color:var(--blue); color:var(--blue); }
+        .tile-btn.danger:hover { border-color:var(--red); color:var(--red); }
+
+        .diag-list { display:flex; flex-direction:column; gap:10px; }
+        .diag-row { display:flex; align-items:center; gap:14px; background:#fff; border:1px solid var(--line); border-radius:11px; padding:13px 18px; }
+        .diag-row div { flex:1; }
+        .diag-row b { display:block; font-size:16px; color:var(--ink); }
+        .diag-row small { color:#8a929e; font-size:12.5px; }
+        .diag-row em { font-style:normal; font-weight:600; font-size:14px; color:#5b6674; }
+        .diag-dot { width:12px; height:12px; border-radius:50%; background:#c6ccd6; flex-shrink:0; }
+        .diag-row.ok .diag-dot { background:#1f9d55; box-shadow:0 0 0 4px rgba(31,157,85,.14); }
+        .diag-row.ok em { color:#0e6b39; }
+        .diag-row.fail .diag-dot { background:var(--red); box-shadow:0 0 0 4px rgba(238,39,55,.12); }
+        .diag-row.fail em { color:#a11624; }
+        .diag-row.wait .diag-dot { background:#f2b824; }
+
+        @keyframes cardIn { from { opacity:0; transform: translateY(14px); } to { opacity:1; transform:none; } }
+        .card.active, .card[style*="flex"] { animation: cardIn .32s ease both; }
+        :focus-visible { outline: 3px solid var(--cyan); outline-offset: 2px; border-radius: 6px; }
+        .footer-note { position: fixed; bottom: 10px; right: 20px; color: #a7b0bc; font-size: 11.5px; line-height: 1; letter-spacing: .6px; pointer-events: none; z-index: 10; white-space: nowrap; }
+        .lang-switch { display:flex; gap:4px; }
+        .lang-btn { border:1.5px solid var(--line, #E3E8EF); background:#fff; color:#6b7482; font:600 13px/1 'Segoe UI',sans-serif; padding:8px 11px; border-radius:8px; cursor:pointer; }
+        .lang-btn.aktivni { background:var(--blue,#00205B); color:#fff; border-color:var(--blue,#00205B); }
+    </style>
+
+
+</head>
+<body>
+
+<div class="header">
+    <div class="logo" id="brand-logo"><span style="font-weight:800;font-size:26px;color:var(--blue);letter-spacing:1px;">GuestBook</span></div>
+    <div style="display:flex; align-items:center; gap:18px;">
+        <div class="lang-switch">
+            <button class="lang-btn" data-lang="cs" onclick="nastavJazyk('cs')">CZ</button>
+            <button class="lang-btn" data-lang="en" onclick="nastavJazyk('en')">EN</button>
+            <button class="lang-btn" data-lang="de" onclick="nastavJazyk('de')">DE</button>
+        </div>
+        <div id="wacom-chip" class="wacom-chip off"><i></i><span data-i18n="tablet.disconnected">Tablet odpojen</span></div>
+        <div class="claim">Crafted to Perfection <span class="plus"></span></div>
+    </div>
+</div>
+
+<div class="main-container">
+
+        <div id="screen-home" class="card active">
+        <div class="home-hero">
+            <h1><span data-i18n="home.title">Vítejte v LINTECHu</span> <span class="plus" style="width:.5em;height:.5em;"></span></h1>
+            <p data-i18n="home.subtitle">Vyberte prosím, co vás k nám přivádí.</p>
+        </div>
+        <div class="grid-menu">
+            <button class="menu-btn" onclick="switchView('register-form')">
+                <b data-i18n="home.first.title">Jsem tu poprvé</b>
+                <span data-i18n="home.first.desc">Vyplníte krátký formulář, projdete si bezpečnostní pokyny a podepíšete se.</span>
+            </button>
+            <button class="menu-btn" onclick="switchView('search-registered')">
+                <b data-i18n="home.return.title">Už jsem u vás byl(a)</b>
+                <span data-i18n="home.return.desc">Stačí napsat jméno a potvrdit příchod podpisem. Zabere to pár vteřin.</span>
+            </button>
+            <button class="menu-btn leave" onclick="openDepartureView()">
+                <div><b data-i18n="home.leave.title">Odcházím</b><br><span data-i18n="home.leave.desc">Odhlaste se před opuštěním budovy.</span></div>
+            </button>
+        </div>
+    </div>
+
+        <div id="screen-register-form" class="card" style="max-width:860px; margin:0 auto;">
+        <h2 data-i18n="reg.title">Nová registrace</h2>
+        <div class="form-wrap" style="max-width:640px; margin:0 auto; width:100%;">
+            <div style="flex:1;">
+                <div class="input-group" id="grp-jmeno">
+                    <label data-i18n="reg.name">Jméno a příjmení</label>
+                    <input type="text" id="reg-jmeno" autocomplete="off" placeholder="Jan Novák" data-i18n-ph="ph.name">
+                    <span class="field-mark"></span>
+                    <div class="field-hint" id="hint-jmeno"></div>
+                    <div id="reg-suggestions" class="suggestions-box"></div>
+                </div>
+                <div class="input-group" id="grp-email">
+                    <label data-i18n="reg.email">E-mail</label>
+                    <input type="email" id="reg-email" autocomplete="off" placeholder="jan.novak@firma.cz" data-i18n-ph="ph.email">
+                    <span class="field-mark"></span>
+                    <div class="field-hint" id="hint-email"></div>
+                </div>
+                <div class="input-group" id="grp-telefon">
+                    <label data-i18n="reg.phone">Telefon</label>
+                    <input type="tel" id="reg-telefon" autocomplete="off" placeholder="+420 725 946 328" data-i18n-ph="ph.phone">
+                    <span class="field-mark"></span>
+                    <div class="field-hint" id="hint-telefon"></div>
+                </div>
+                <div class="input-group" id="grp-spolecnost">
+                    <label><span data-i18n="reg.company">Společnost</span> <span style="font-weight:400;color:#8a929e;" data-i18n="reg.company.opt">(nepovinné)</span></label>
+                    <input type="text" id="reg-spolecnost" autocomplete="off" placeholder="Firma s.r.o." data-i18n-ph="ph.company">
+                </div>
+            </div>
+            <div style="display:flex; justify-content: space-between; margin-top:14px;">
+                <button class="btn btn-outline" onclick="switchView('home')" data-i18n="common.back">Zpět</button>
+                <button class="btn btn-blue" onclick="validateAndGoToRules()" data-i18n="common.continue">Pokračovat</button>
+            </div>
+        </div>
+    </div>
+
+        <div id="screen-rules" class="card">
+        <h2 data-i18n="rules.title">Bezpečnostní pokyny</h2>
+        <div class="rules-split">
+            <div class="rules-left-col">
+                <div class="rules-stage"><div id="rules-content-container" style="width:100%; height:100%;"></div>
+                    <div class="rules-zoom" id="rules-zoom">
+                        <button onclick="zoomPokynu(-1)" aria-label="Oddálit">−</button>
+                        <button class="rz-info" id="rules-zoom-val" onclick="zoomPokynu(0)">100&nbsp;%</button>
+                        <button onclick="zoomPokynu(1)" aria-label="Přiblížit">+</button>
+                    </div>
+                </div>
+                <div class="rules-controls">
+                    <button class="btn btn-outline" id="btn-prev-rule" onclick="prevRule()" data-i18n="rules.prev">‹ Předchozí</button>
+                    <div class="rules-progress">
+                        <small id="rules-counter">Strana 1 z 2</small>
+                        <div class="rules-bar"><i id="rules-bar-fill"></i></div>
+                    </div>
+                    <button class="btn btn-blue" id="btn-next-rule" onclick="nextRule()" data-i18n="rules.next">Další ›</button>
+                </div>
+            </div>
+            <div class="rules-right-col" id="register-signature-area">
+                <h3 data-i18n="rules.consent.title">Souhlas a podpis</h3>
+                <p class="sig-sub" data-i18n="rules.consent.sub">Podpisem potvrzujete, že jste se seznámil(a) s bezpečnostními pokyny.</p>
+                <div id="wacom-status-reg" class="wacom-status disconnected"><div class="wacom-dot"></div><span id="wacom-status-reg-text" data-i18n="tablet.notconnected">Tablet nepřipojen</span></div>
+                <div class="signature-box sig-line"><canvas id="canvasRegister" class="sigpad" width="500" height="220"></canvas></div>
+                <div style="display:flex; gap:10px; width:100%; margin-top:14px;">
+                    <button class="btn btn-outline" style="flex:1;" id="clearRegisterBtn" data-i18n="common.clear">Vymazat</button>
+                    <button class="btn btn-red" style="flex:2;" id="submitRegBtn" data-i18n="rules.agree">Souhlasím a registruji se</button>
+                </div>
+            </div>
+        </div>
+        <div style="margin-top:16px; display:flex; flex-shrink:0;">
+            <button class="btn btn-outline" onclick="switchView('register-form')" data-i18n="rules.backForm">‹ Zpět na formulář</button>
+        </div>
+    </div>
+
+        <div id="screen-search-registered" class="card">
+        <h2 data-i18n="search.title">Vítejte zpět</h2>
+        <div class="form-wrap" style="justify-content:center;">
+            <div class="input-group" style="max-width:720px; margin:0 auto 24px; width:100%;">
+                <label data-i18n="search.label">Začněte psát své jméno</label>
+                <input type="text" id="search-input" autocomplete="off" placeholder="Jan Novák" data-i18n-ph="ph.name" style="font-size:22px; padding:20px 22px;">
+                <div id="search-suggestions" class="suggestions-box"></div>
+            </div>
+            <p style="text-align:center; color:#8a929e; font-size:15px;" data-i18n="search.hint">Vyberte se ze seznamu a potvrďte příchod podpisem.</p>
+            <p style="text-align:center; margin-top:6px;"><button class="btn btn-outline" style="padding:11px 22px; font-size:14.5px;" onclick="otevriNahledPokynu()" data-i18n="search.remind">Připomenout bezpečnostní pokyny</button></p>
+        </div>
+        <div style="margin-top:auto;"><button class="btn btn-outline" onclick="switchView('home')" data-i18n="common.backShort">‹ Zpět</button></div>
+    </div>
+
+        <div id="screen-arrival-confirm" class="card">
+        <h2 data-i18n="arr.title">Potvrzení vstupu</h2>
+        <div class="arrival-split">
+            <div class="arrival-info">
+                <div class="arrival-person">
+                    <h3 id="arr-name">—</h3>
+                    <p id="arr-detail">—</p>
+                </div>
+                <p class="arrival-note" data-i18n="arr.note">
+                    Svým podpisem potvrzuji, že jsem seznámen(a) s bezpečnostními pokyny společnosti LINTECH
+                    a budu se jimi po celou dobu návštěvy řídit. V areálu se pohybuji pouze v doprovodu odpovědné osoby.
+                </p>
+                <div id="biometric-score" style="font-weight:600; font-size:16px; color:#6b7482;" data-i18n="arr.waiting">Čekáme na váš podpis…</div>
+            </div>
+            <div class="arrival-sig">
+                <h3 data-i18n="arr.sig">Podpis</h3>
+                <p class="sig-sub" data-i18n="arr.sig.sub">Podepište se perem na tabletu, případně prstem přímo zde.</p>
+                <div id="wacom-status-arr" class="wacom-status disconnected"><div class="wacom-dot"></div><span id="wacom-status-arr-text" data-i18n="tablet.notconnected">Tablet nepřipojen</span></div>
+                <div class="signature-box sig-line"><canvas id="canvasArrival" class="sigpad" width="500" height="220"></canvas></div>
+                <div style="display:flex; gap:10px; width:100%; margin-top:14px;">
+                    <button class="btn btn-outline" style="flex:1;" id="clearArrivalBtn" data-i18n="common.clear">Vymazat</button>
+                    <button class="btn btn-red" style="flex:2;" id="submitArrivalBtn" data-i18n="arr.confirm">Potvrdit příchod</button>
+                </div>
+            </div>
+        </div>
+        <div style="display:flex; margin-top:16px; flex-shrink:0;">
+            <button class="btn btn-outline" onclick="switchView('search-registered')" data-i18n="common.backShort">‹ Zpět</button>
+        </div>
+    </div>
+
+        <div id="screen-departure" class="card">
+        <h2 data-i18n="dep.title">Kdo odchází?</h2>
+        <p class="departure-sub" data-i18n="dep.sub">Klepněte na své jméno a potvrďte odchod.</p>
+        <div id="active-visitors-list" class="departure-grid"></div>
+        <div style="margin-top:16px; flex-shrink:0;"><button class="btn btn-outline" onclick="switchView('home')" data-i18n="dep.backHome">‹ Zpět na úvod</button></div>
+    </div>
+
+        <div id="screen-admin" class="card" style="max-width:1180px; margin:0 auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px; flex-shrink:0;">
+            <h2 style="margin:0; border:none; padding:0;">Diagnostika zařízení</h2>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-blue" style="padding:11px 20px; font-size:15px;" onclick="spustDiagnostiku()">Zkontrolovat znovu</button>
+                <button class="btn btn-outline" style="padding:11px 20px; font-size:15px;" onclick="switchView('home')">Zavřít</button>
+            </div>
+        </div>
+        <p style="margin:0 0 14px; color:#6b7482; font-size:14.5px; flex-shrink:0;">Správa dat a pokynů běží ve webové administraci na adrese uvedené v konzoli serveru. Tady se řeší jen tenhle kiosek a tablet.</p>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; flex:1; min-height:0;">
+            <div class="diag-list" style="align-content:start;">
+                <div class="diag-row" id="diag-api"><span class="diag-dot"></span><div><b>API server</b><small>Spojení a platnost klíče</small></div><em>–</em></div>
+                <div class="diag-row" id="diag-db"><span class="diag-dot"></span><div><b>Databáze</b><small>Dotaz do MySQL přes server</small></div><em>–</em></div>
+                <div class="diag-row" id="diag-env"><span class="diag-dot"></span><div><b>Konfigurace</b><small>Soubor .env – klíče a licence</small></div><em>–</em></div>
+                <div class="diag-row" id="diag-tablet"><span class="diag-dot"></span><div><b>Podpisový tablet</b><small>Připojení a rozlišení</small></div><em>–</em></div>
+                <div class="diag-row" id="diag-pero"><span class="diag-dot"></span><div><b>Pero</b><small>Pište do zkušební plochy vpravo</small></div><em id="diag-pero-count">–</em></div>
+                <div class="diag-row" id="diag-fss"><span class="diag-dot"></span><div><b>Forenzní podpis (FSS)</b><small>Ze zkušebního podpisu, nikam se neukládá</small></div><em>–</em></div>
+                <div style="display:flex; gap:10px; margin-top:4px;">
+                    <button class="btn btn-blue" style="flex:1; padding:12px;" onclick="zapnoutWacom(true).then(()=>spustDiagnostiku())">Připojit tablet</button>
+                    <button class="btn btn-outline" style="flex:1; padding:12px;" onclick="odpojWacom(); refreshWacomUI(); spustDiagnostiku();">Odpojit tablet</button>
+                </div>
+            </div>
+            <div style="background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:16px 18px; display:flex; flex-direction:column; min-height:0;">
+                <b style="color:var(--blue);">Zkušební podpis</b>
+                <p style="margin:4px 0 12px; font-size:13px; color:#8a929e;">Plocha zrcadlí, co píšete perem na tabletu. FSS vzniká jen z pera, ne z prstu nebo myši.</p>
+                <div class="signature-box sig-line"><canvas id="canvasDiag" class="sigpad" width="500" height="220"></canvas></div>
+                <div style="display:flex; gap:10px; margin-top:12px;">
+                    <button class="btn btn-outline" style="flex:1; padding:11px; font-size:14.5px;" onclick="vycistiPodpis()">Vymazat</button>
+                    <button class="btn btn-blue" style="flex:1.3; padding:11px; font-size:14.5px;" onclick="diagTestFSS()">Vygenerovat FSS</button>
+                    <button class="btn btn-green" style="flex:1.3; padding:11px; font-size:14.5px;" id="diagFssDownloadBtn" onclick="stahniDiagFss()" disabled>Stáhnout .fss</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="kioskAlert" class="kiosk-alert-overlay"><div class="kiosk-alert-box"><h3 id="alertTitle">Upozornění</h3><p id="alertMessage">Zpráva</p><button class="btn btn-blue" onclick="document.getElementById('kioskAlert').style.display = 'none';">Rozumím</button></div></div>
+<div id="departureModal" class="kiosk-alert-overlay"><div class="kiosk-alert-box" style="border-top-color: var(--red);"><h3 data-i18n="dep.modal.title">Odhlásit z budovy?</h3><p id="departureModalMessage" data-i18n="dep.modal.msg">Potvrďte prosím svůj odchod.</p><input type="hidden" id="departureTargetId"><div style="display:flex; gap:15px; justify-content:center;"><button class="btn btn-outline" onclick="document.getElementById('departureModal').style.display = 'none';" data-i18n="common.back">Zpět</button><button class="btn btn-red" onclick="executeDeparture()" data-i18n="dep.modal.yes">Ano, odcházím</button></div></div></div>
+
+
+
+<div id="thanksOverlay" class="fx-overlay" onclick="zavriRozlouceni()">
+    <span class="big-plus"></span>
+    <svg class="fx-badge" viewBox="0 0 120 120" aria-hidden="true"><circle class="tc-ring" cx="60" cy="60" r="52"/><path class="tc-mark" d="M36 62 L53 79 L86 44"/></svg>
+    <h1 id="thanks-title">Na shledanou<span class="plus"></span></h1>
+    <p id="thanks-sub" data-i18n="ov.thanks.sub">Odchod máte zaznamenaný. Díky za návštěvu a šťastnou cestu!</p>
+    <div class="fx-progress"><i></i></div>
+    <div class="fx-hint" data-i18n="ov.tapHome">Klepnutím se vrátíte na úvod</div>
+</div>
+
+<div id="regOkOverlay" class="fx-overlay" onclick="zavriRegOk()">
+    <span class="big-plus"></span>
+    <svg class="fx-badge" viewBox="0 0 120 120" aria-hidden="true"><circle class="tc-ring" cx="60" cy="60" r="52"/><path class="tc-mark" d="M36 62 L53 79 L86 44"/></svg>
+    <h1 id="regok-title">Registrace úspěšná!<span class="plus"></span></h1>
+    <p id="regok-sub" data-i18n="ov.regok.sub">Máme vás v systému. Teď už jen potvrďte svůj příchod podpisem.</p>
+    <div class="fx-progress"><i></i></div>
+    <div class="fx-hint" data-i18n="ov.tapSign">Klepnutím pokračujete k podpisu příchodu</div>
+</div>
+
+<div id="regDoneOverlay" class="fx-overlay" onclick="zavriOverlay('regDoneOverlay')">
+    <span class="big-plus"></span>
+    <svg class="fx-badge" viewBox="0 0 120 120" aria-hidden="true"><circle class="tc-ring" cx="60" cy="60" r="52"/><path class="tc-mark" d="M36 62 L53 79 L86 44"/></svg>
+    <h1 id="regdone-title">Registrace dokončena<span class="plus"></span></h1>
+    <p id="regdone-sub" data-i18n="ov.regdone.sub">Děkujeme! Teď už jen potvrďte svůj dnešní příchod podpisem.</p>
+    <div class="fx-progress"><i></i></div>
+    <div class="fx-hint" data-i18n="ov.tapCont">Klepnutím pokračujete</div>
+</div>
+
+<div id="welcomeOverlay" class="fx-overlay" onclick="zavriUvitani()">
+    <span class="big-plus"></span>
+    <svg class="fx-badge" viewBox="0 0 120 120" aria-hidden="true"><circle class="tc-ring" cx="60" cy="60" r="52"/><path class="tc-mark" d="M36 62 L53 79 L86 44"/></svg>
+    <h1 id="welcome-title">Vítejte!<span class="plus"></span></h1>
+    <p id="welcome-sub" data-i18n="ov.welcome.sub">Příchod je zaznamenaný. Prosíme, vyčkejte na doprovod.</p>
+    <div class="fx-progress"><i></i></div>
+    <div class="fx-hint" data-i18n="ov.tapHome">Klepnutím se vrátíte na úvod</div>
+</div>
+
+<div id="pinOverlay" class="kiosk-alert-overlay" style="z-index:2500;">
+    <div class="kiosk-alert-box" style="max-width:420px;">
+        <h3>Vstup do administrace</h3>
+        <p style="color:#6b7482; margin:6px 0 18px;">Zadejte přístupový kód.</p>
+        <div id="pin-dots" style="display:flex; gap:12px; justify-content:center; margin-bottom:22px;"></div>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;">
+            <button class="btn btn-outline pin-key" onclick="pinStisk('1')">1</button>
+            <button class="btn btn-outline pin-key" onclick="pinStisk('2')">2</button>
+            <button class="btn btn-outline pin-key" onclick="pinStisk('3')">3</button>
+            <button class="btn btn-outline pin-key" onclick="pinStisk('4')">4</button>
+            <button class="btn btn-outline pin-key" onclick="pinStisk('5')">5</button>
+            <button class="btn btn-outline pin-key" onclick="pinStisk('6')">6</button>
+            <button class="btn btn-outline pin-key" onclick="pinStisk('7')">7</button>
+            <button class="btn btn-outline pin-key" onclick="pinStisk('8')">8</button>
+            <button class="btn btn-outline pin-key" onclick="pinStisk('9')">9</button>
+            <button class="btn btn-outline pin-key" onclick="pinSmaz()">←</button>
+            <button class="btn btn-outline pin-key" onclick="pinStisk('0')">0</button>
+            <button class="btn btn-outline pin-key" onclick="zavriPin()">Zrušit</button>
+        </div>
+    </div>
+</div>
+
+<div id="rulesPreviewModal" class="kiosk-alert-overlay" style="z-index:2400;">
+    <div class="kiosk-alert-box" style="max-width:900px; width:94%; text-align:left; border-top-color: var(--blue); display:flex; flex-direction:column; max-height:86vh;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="margin:0;" data-i18n="rulesPreview.title">Bezpečnostní pokyny</h3>
+            <button class="btn btn-outline" style="padding:9px 18px; font-size:14px;" onclick="zavriNahledPokynu()" data-i18n="common.close">Zavřít</button>
+        </div>
+        <div id="rules-preview-body" style="overflow-y:auto; flex:1; background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:20px;"></div>
+        <div style="display:flex; justify-content:center; align-items:center; margin-top:12px;">
+            <span id="rules-preview-count" style="color:#6b7482; font-weight:600;"></span>
+        </div>
+    </div>
+</div>
+
+<div class="footer-note" id="footer-note">LINTECH, spol. s r.o. · lintech.cz</div>
+
+<script>
+
+    const _fs = require('fs');
+    const _path = require('path');
+
+    const KONFIG_DIR = (() => {
+        const a = (process.argv || []).find(x => x && x.startsWith('--konfig-dir='));
+        if (a) return a.slice('--konfig-dir='.length);
+        return _path.join(__dirname, '..');
+    })();
+
+    function _ctiEnv(cesta) {
+        const out = {};
+        try {
+            const raw = _fs.readFileSync(cesta, 'utf-8');
+            for (const line of raw.split(/\r?\n/)) {
+                const t = line.trim();
+                if (!t || t.startsWith('#')) continue;
+                const i = t.indexOf('=');
+                if (i === -1) continue;
+                let v = t.slice(i + 1).trim();
+                if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+                out[t.slice(0, i).trim()] = v;
+            }
+        } catch (e) {}
+        return out;
+    }
+
+    const APP_ENV_PATH = _path.join(KONFIG_DIR, 'app.env');
+    const ENV = (() => {
+        let e = _ctiEnv(APP_ENV_PATH);
+        if (!e.API_KEY) e = { ..._ctiEnv(_path.join(__dirname, '../.env')), ...e }; 
+        const host = e.API_HOST || '127.0.0.1';
+        if (host === '127.0.0.1' || host === 'localhost') {
+            const srv = _ctiEnv(_path.join(KONFIG_DIR, 'server.env'));
+            if (srv.API_KEY) e.API_KEY = srv.API_KEY;
+        }
+        return e;
+    })();
+
+    const THEME = (() => {
+        try { return JSON.parse(_fs.readFileSync(_path.join(KONFIG_DIR, 'theme.json'), 'utf-8')); }
+        catch (e) { try { return JSON.parse(_fs.readFileSync(_path.join(__dirname, 'theme.json'), 'utf-8')); } catch (e2) { return {}; } }
+    })();
+    if (THEME.primarni) document.documentElement.style.setProperty('--blue', THEME.primarni);
+    if (THEME.akcent)   document.documentElement.style.setProperty('--red', THEME.akcent);
+    if (THEME.pozadi)   document.documentElement.style.setProperty('--paper', THEME.pozadi);
+    if (THEME.text)     document.documentElement.style.setProperty('--ink', THEME.text);
+    if (THEME.font && /^[A-Za-z0-9][A-Za-z0-9 \-]{1,38}$/.test(THEME.font)) {
+        try {
+            const l = document.createElement('link');
+            l.rel = 'stylesheet';
+            l.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(THEME.font).replace(/%20/g, '+') + ':wght@400;600;700;800&display=swap';
+            document.head.appendChild(l);
+            document.documentElement.style.fontFamily = "'" + THEME.font + "', 'Segoe UI', sans-serif";
+        } catch (e) {}
+    }
+
+    const BRAND = {
+        company: THEME.companyName || ENV.COMPANY_NAME || 'GuestBook',
+        logo: THEME.logo || null
+    };
+    window.BRAND = BRAND;
+    function _logoDataUrl(cesta) {
+        try {
+            if (!cesta || !_fs.existsSync(cesta)) return null;
+            const buf = _fs.readFileSync(cesta);
+            if (buf.length > 4 * 1024 * 1024) return null;
+            const ext = _path.extname(cesta).toLowerCase();
+            const mime = ext === '.svg' ? 'image/svg+xml'
+                : (ext === '.jpg' || ext === '.jpeg') ? 'image/jpeg'
+                : ext === '.webp' ? 'image/webp'
+                : ext === '.ico' ? 'image/x-icon'
+                : 'image/png';
+            return 'data:' + mime + ';base64,' + buf.toString('base64');
+        } catch (e) { return null; }
+    }
+    function aplikujBranding() {
+        document.title = BRAND.company;
+        const box = document.getElementById('brand-logo');
+        if (box) {
+            let data = null;
+            if (typeof THEME.logoData === 'string' && THEME.logoData.startsWith('data:image/')) data = THEME.logoData;
+            if (!data) data = _logoDataUrl(BRAND.logo);
+            if (!data) data = _logoDataUrl(_path.join(__dirname, 'logo-lintech-dark.png'));
+            if (data) {
+                box.innerHTML = '';
+                const im = document.createElement('img');
+                im.src = data; im.alt = BRAND.company;
+                box.appendChild(im);
+            } else {
+                box.innerHTML = '';
+                const sp = document.createElement('span');
+                sp.style.cssText = 'font-weight:800;font-size:26px;color:var(--blue);letter-spacing:1px;';
+                sp.textContent = BRAND.company;
+                box.appendChild(sp);
+                if (BRAND.logo) console.warn('Logo se nepodařilo načíst ze souboru: ' + BRAND.logo);
+            }
+        }
+        const fn = document.getElementById('footer-note');
+        if (fn) fn.textContent = BRAND.company;
+    }
+    window.addEventListener('DOMContentLoaded', aplikujBranding);
+
+    let LANG = (ENV.LANG || 'cs').toLowerCase();
+    if (!['cs', 'en', 'de'].includes(LANG)) LANG = 'cs';
+
+    const I18N = {
+        cs: {
+            'home.title': 'Vítejte v {company}',
+            'home.subtitle': 'Vyberte prosím, co vás k nám přivádí.',
+            'home.first.title': 'Jsem tu poprvé',
+            'home.first.desc': 'Vyplníte krátký formulář, projdete si bezpečnostní pokyny a podepíšete se.',
+            'home.return.title': 'Už jsem u vás byl(a)',
+            'home.return.desc': 'Stačí napsat jméno a potvrdit příchod podpisem. Zabere to pár vteřin.',
+            'home.leave.title': 'Odcházím',
+            'home.leave.desc': 'Odhlaste se před opuštěním budovy.',
+            'reg.title': 'Nová registrace',
+            'reg.name': 'Jméno a příjmení', 'reg.email': 'E-mail', 'reg.phone': 'Telefon',
+            'reg.company': 'Společnost', 'reg.company.opt': '(nepovinné)',
+            'rules.title': 'Bezpečnostní pokyny', 'rules.prev': '‹ Předchozí', 'rules.next': 'Další ›',
+            'rules.consent.title': 'Souhlas a podpis',
+            'rules.consent.sub': 'Podpisem potvrzujete, že jste se seznámil(a) s bezpečnostními pokyny.',
+            'rules.agree': 'Souhlasím a registruji se', 'rules.backForm': '‹ Zpět na formulář',
+            'search.title': 'Vítejte zpět', 'search.label': 'Začněte psát své jméno',
+            'search.hint': 'Vyberte se ze seznamu a potvrďte příchod podpisem.',
+            'search.remind': 'Připomenout bezpečnostní pokyny',
+            'arr.title': 'Potvrzení vstupu',
+            'arr.note': 'Svým podpisem potvrzuji, že jsem seznámen(a) s bezpečnostními pokyny společnosti {company} a budu se jimi po celou dobu návštěvy řídit. V areálu se pohybuji pouze v doprovodu odpovědné osoby.',
+            'arr.waiting': 'Čekáme na váš podpis…', 'arr.done': '✔ Úspěšně zaznamenáno', 'arr.saving': 'Podpis se zaznamenává…',
+            'arr.sig': 'Podpis', 'arr.sig.sub': 'Podepište se perem na tabletu, případně prstem přímo zde.',
+            'arr.confirm': 'Potvrdit příchod',
+            'dep.title': 'Kdo odchází?', 'dep.sub': 'Klepněte na své jméno a potvrďte odchod.',
+            'dep.backHome': '‹ Zpět na úvod', 'dep.modal.title': 'Odhlásit z budovy?',
+            'dep.modal.msg': 'Potvrďte prosím svůj odchod.', 'dep.modal.yes': 'Ano, odcházím',
+            'ov.thanks.title': 'Na shledanou', 'ov.thanks.hello': 'Na shledanou, {name}',
+            'ov.thanks.sub': 'Odchod máte zaznamenaný. Díky za návštěvu a šťastnou cestu!',
+            'ov.regok.title': 'Registrace úspěšná!',
+            'ov.regok.sub': 'Máme vás v systému. Teď už jen potvrďte svůj příchod podpisem.',
+            'ov.regdone.title': 'Registrace dokončena',
+            'ov.regdone.sub': 'Děkujeme! Teď už jen potvrďte svůj dnešní příchod podpisem.',
+            'ov.welcome.title': 'Vítejte!', 'ov.welcome.hello': 'Vítejte, {name}!',
+            'ov.welcome.sub': 'Příchod je zaznamenaný. Prosíme, vyčkejte na doprovod.',
+            'ov.tapHome': 'Klepnutím se vrátíte na úvod', 'ov.tapSign': 'Klepnutím pokračujete k podpisu příchodu',
+            'ov.tapCont': 'Klepnutím pokračujete',
+            'rulesPreview.title': 'Bezpečnostní pokyny',
+            'common.back': 'Zpět', 'common.backShort': '‹ Zpět', 'common.continue': 'Pokračovat',
+            'common.clear': 'Vymazat', 'common.close': 'Zavřít',
+            'tablet.connected': 'Tablet připojen', 'tablet.disconnected': 'Tablet odpojen',
+            'tablet.notconnected': 'Tablet nepřipojen',
+            'rules.counter': 'Strana {a} z {n}',
+            'ph.name': 'Jan Novák', 'ph.email': 'jan.novak@firma.cz', 'ph.phone': '+420 725 946 328', 'ph.company': 'Firma s.r.o.'
+        },
+        en: {
+            'home.title': 'Welcome to {company}',
+            'home.subtitle': 'Please choose what brings you here.',
+            'home.first.title': "I'm here for the first time",
+            'home.first.desc': "You'll fill in a short form, read the safety instructions and sign.",
+            'home.return.title': "I've visited before",
+            'home.return.desc': 'Just type your name and confirm arrival with a signature. Takes a few seconds.',
+            'home.leave.title': 'Leaving',
+            'home.leave.desc': 'Check out before leaving the building.',
+            'reg.title': 'New registration',
+            'reg.name': 'Full name', 'reg.email': 'E-mail', 'reg.phone': 'Phone',
+            'reg.company': 'Company', 'reg.company.opt': '(optional)',
+            'rules.title': 'Safety instructions', 'rules.prev': '‹ Previous', 'rules.next': 'Next ›',
+            'rules.consent.title': 'Consent and signature',
+            'rules.consent.sub': 'By signing you confirm that you have read the safety instructions.',
+            'rules.agree': 'I agree and register', 'rules.backForm': '‹ Back to form',
+            'search.title': 'Welcome back', 'search.label': 'Start typing your name',
+            'search.hint': 'Pick yourself from the list and confirm arrival with a signature.',
+            'search.remind': 'Show safety instructions again',
+            'arr.title': 'Arrival confirmation',
+            'arr.note': 'By signing I confirm that I have been informed of the safety instructions of {company} and will follow them throughout my visit. I move around the premises only when accompanied by a responsible person.',
+            'arr.waiting': 'Waiting for your signature…', 'arr.done': '✔ Successfully recorded', 'arr.saving': 'Recording signature…',
+            'arr.sig': 'Signature', 'arr.sig.sub': 'Sign with the pen on the tablet, or with your finger right here.',
+            'arr.confirm': 'Confirm arrival',
+            'dep.title': 'Who is leaving?', 'dep.sub': 'Tap your name and confirm departure.',
+            'dep.backHome': '‹ Back to start', 'dep.modal.title': 'Check out of the building?',
+            'dep.modal.msg': 'Please confirm your departure.', 'dep.modal.yes': "Yes, I'm leaving",
+            'ov.thanks.title': 'Goodbye', 'ov.thanks.hello': 'Goodbye, {name}',
+            'ov.thanks.sub': 'Your departure has been recorded. Thanks for visiting and safe travels!',
+            'ov.regok.title': 'Registration successful!',
+            'ov.regok.sub': "You're in the system. Now just confirm your arrival with a signature.",
+            'ov.regdone.title': 'Registration complete',
+            'ov.regdone.sub': 'Thank you! Now just confirm your arrival today with a signature.',
+            'ov.welcome.title': 'Welcome!', 'ov.welcome.hello': 'Welcome, {name}!',
+            'ov.welcome.sub': 'Your arrival is recorded. Please wait for your escort.',
+            'ov.tapHome': 'Tap to return to start', 'ov.tapSign': 'Tap to continue to the arrival signature',
+            'ov.tapCont': 'Tap to continue',
+            'rulesPreview.title': 'Safety instructions',
+            'common.back': 'Back', 'common.backShort': '‹ Back', 'common.continue': 'Continue',
+            'common.clear': 'Clear', 'common.close': 'Close',
+            'tablet.connected': 'Tablet connected', 'tablet.disconnected': 'Tablet disconnected',
+            'tablet.notconnected': 'Tablet not connected',
+            'rules.counter': 'Page {a} of {n}',
+            'ph.name': 'John Smith', 'ph.email': 'john.smith@company.com', 'ph.phone': '+420 725 946 328', 'ph.company': 'Company Ltd.'
+        },
+        de: {
+            'home.title': 'Willkommen bei {company}',
+            'home.subtitle': 'Bitte wählen Sie, was Sie zu uns führt.',
+            'home.first.title': 'Ich bin zum ersten Mal hier',
+            'home.first.desc': 'Sie füllen ein kurzes Formular aus, lesen die Sicherheitshinweise und unterschreiben.',
+            'home.return.title': 'Ich war schon einmal hier',
+            'home.return.desc': 'Geben Sie einfach Ihren Namen ein und bestätigen Sie die Ankunft mit einer Unterschrift. Dauert nur ein paar Sekunden.',
+            'home.leave.title': 'Ich gehe',
+            'home.leave.desc': 'Melden Sie sich ab, bevor Sie das Gebäude verlassen.',
+            'reg.title': 'Neue Registrierung',
+            'reg.name': 'Vor- und Nachname', 'reg.email': 'E-Mail', 'reg.phone': 'Telefon',
+            'reg.company': 'Firma', 'reg.company.opt': '(optional)',
+            'rules.title': 'Sicherheitshinweise', 'rules.prev': '‹ Zurück', 'rules.next': 'Weiter ›',
+            'rules.consent.title': 'Einwilligung und Unterschrift',
+            'rules.consent.sub': 'Mit Ihrer Unterschrift bestätigen Sie, dass Sie die Sicherheitshinweise gelesen haben.',
+            'rules.agree': 'Ich stimme zu und registriere mich', 'rules.backForm': '‹ Zurück zum Formular',
+            'search.title': 'Willkommen zurück', 'search.label': 'Beginnen Sie, Ihren Namen einzugeben',
+            'search.hint': 'Wählen Sie sich aus der Liste und bestätigen Sie die Ankunft mit einer Unterschrift.',
+            'search.remind': 'Sicherheitshinweise erneut anzeigen',
+            'arr.title': 'Ankunftsbestätigung',
+            'arr.note': 'Mit meiner Unterschrift bestätige ich, dass ich über die Sicherheitshinweise der Firma {company} informiert wurde und diese während meines Besuchs befolgen werde. Auf dem Gelände bewege ich mich nur in Begleitung einer verantwortlichen Person.',
+            'arr.waiting': 'Warten auf Ihre Unterschrift…', 'arr.done': '✔ Erfolgreich erfasst', 'arr.saving': 'Unterschrift wird erfasst…',
+            'arr.sig': 'Unterschrift', 'arr.sig.sub': 'Unterschreiben Sie mit dem Stift auf dem Tablet oder mit dem Finger hier.',
+            'arr.confirm': 'Ankunft bestätigen',
+            'dep.title': 'Wer geht?', 'dep.sub': 'Tippen Sie auf Ihren Namen und melden Sie sich ab.',
+            'dep.backHome': '‹ Zurück zum Start', 'dep.modal.title': 'Aus dem Gebäude abmelden?',
+            'dep.modal.msg': 'Bitte bestätigen Sie, dass Sie das Gebäude verlassen.', 'dep.modal.yes': 'Ja, ich gehe',
+            'ov.thanks.title': 'Auf Wiedersehen', 'ov.thanks.hello': 'Auf Wiedersehen, {name}',
+            'ov.thanks.sub': 'Sie sind abgemeldet. Danke für Ihren Besuch und gute Fahrt!',
+            'ov.regok.title': 'Registrierung erfolgreich!',
+            'ov.regok.sub': 'Sie sind im System. Bestätigen Sie jetzt nur noch Ihre Ankunft mit einer Unterschrift.',
+            'ov.regdone.title': 'Registrierung abgeschlossen',
+            'ov.regdone.sub': 'Vielen Dank! Bestätigen Sie jetzt nur noch Ihre heutige Ankunft mit einer Unterschrift.',
+            'ov.welcome.title': 'Willkommen!', 'ov.welcome.hello': 'Willkommen, {name}!',
+            'ov.welcome.sub': 'Ihre Ankunft ist erfasst. Bitte warten Sie auf Ihre Begleitung.',
+            'ov.tapHome': 'Tippen, um zum Start zurückzukehren', 'ov.tapSign': 'Tippen, um zur Ankunftsunterschrift fortzufahren',
+            'ov.tapCont': 'Tippen, um fortzufahren',
+            'rulesPreview.title': 'Sicherheitshinweise',
+            'common.back': 'Zurück', 'common.backShort': '‹ Zurück', 'common.continue': 'Weiter',
+            'common.clear': 'Löschen', 'common.close': 'Schließen',
+            'tablet.connected': 'Tablet verbunden', 'tablet.disconnected': 'Tablet getrennt',
+            'tablet.notconnected': 'Tablet nicht verbunden',
+            'rules.counter': 'Seite {a} von {n}',
+            'ph.name': 'Max Mustermann', 'ph.email': 'max.mustermann@firma.de', 'ph.phone': '+420 725 946 328', 'ph.company': 'Firma GmbH'
+        }
+    };
+
+    function t(key, vars) {
+        const tbl = I18N[LANG] || I18N.cs;
+        let s = (tbl[key] != null) ? tbl[key] : (I18N.cs[key] != null ? I18N.cs[key] : key);
+        s = s.replace(/\{company\}/g, BRAND.company);
+        if (vars) for (const k in vars) s = s.split('{' + k + '}').join(vars[k]);
+        return s;
+    }
+
+    function aplikujPreklady(root) {
+        const r = root || document;
+        r.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
+        r.querySelectorAll('[data-i18n-ph]').forEach(el => { el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))); });
+        document.documentElement.lang = LANG;
+        document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('aktivni', b.getAttribute('data-lang') === LANG));
+    }
+
+    async function nastavJazyk(lang) {
+        if (!['cs', 'en', 'de'].includes(lang)) return;
+        LANG = lang;
+        aplikujPreklady();
+        try { const { ipcRenderer } = require('electron'); await ipcRenderer.invoke('env-zapis', 'aplikace', { LANG: lang }); } catch (e) {}
+    }
+    window.addEventListener('DOMContentLoaded', () => aplikujPreklady());
+
+    const API_URL = 'http://' + (ENV.API_HOST || '127.0.0.1') + ':' + (ENV.PORT || '3000');
+    const API_KEY = ENV.API_KEY || '';
+    const WACOM_LICENCE_KEY    = ENV.WACOM_LICENCE_KEY || '';
+    const WACOM_LICENCE_SECRET = ENV.WACOM_LICENCE_SECRET || '';
+
+    if (!API_KEY) {
+        window.addEventListener('DOMContentLoaded', () =>
+            showKioskAlert('Chybí konfigurace', 'Soubor .env nebyl nalezen nebo v něm chybí API_KEY. Aplikace nemůže komunikovat se serverem.'));
+    }
+
+    let nahledStrany = [];
+    let nahledIndex = 0;
+    async function otevriNahledPokynu() {
+        try {
+            nahledStrany = await api.nactiPravidla() || [];
+        } catch (e) { showKioskAlert('Pokyny nejdou načíst', e.message); return; }
+        if (!nahledStrany.length) { showKioskAlert('Bezpečnostní pokyny', 'Zatím tu žádné pokyny nejsou.'); return; }
+        document.getElementById('rules-preview-body').innerHTML = nahledStrany
+            .map((s, i) => `<div style="margin-bottom:22px;">${s.obsah}</div>`
+                + (i < nahledStrany.length - 1 ? '<hr style="border:none; border-top:1px dashed #c8d0dc; margin:22px 0;">' : ''))
+            .join('');
+        document.getElementById('rules-preview-count').innerText = nahledStrany.length + (nahledStrany.length === 1 ? ' strana' : nahledStrany.length < 5 ? ' strany' : ' stran');
+        document.getElementById('rulesPreviewModal').style.display = 'flex';
+        document.getElementById('rules-preview-body').scrollTop = 0;
+    }
+    window.otevriNahledPokynu = otevriNahledPokynu;
+    function zavriNahledPokynu() { document.getElementById('rulesPreviewModal').style.display = 'none'; }
+    window.zavriNahledPokynu = zavriNahledPokynu;
+
+    async function tabletPritomen() {
+        try {
+            if (wacom && wacom.connected) return true;
+            return (await navigator.hid.getDevices()).some(d => d.vendorId === 0x056A);
+        } catch (e) { return !!(wacom && wacom.connected); }
+    }
+    let heartbeatChybaHlasena = false;
+    async function posliHeartbeat() {
+        try {
+            await api.stavKiosku({ tablet: await tabletPritomen() });
+            if (heartbeatChybaHlasena) { console.log('Hlášení serveru zase funguje.'); heartbeatChybaHlasena = false; }
+        } catch (e) {
+            if (!heartbeatChybaHlasena) {
+                heartbeatChybaHlasena = true;
+                console.warn('Hlášení stavu serveru selhává (' + e.message + ') – správa bude ukazovat, že se kiosek nehlásí. Adresa: ' + API_URL);
+            }
+        }
+    }
+    setInterval(posliHeartbeat, 30000);
+    setTimeout(posliHeartbeat, 4000);
+
+
+    async function secureFetch(url, options = {}) {
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-API-Key': API_KEY,
+            ...(options.headers || {})
+        };
+        const response = await fetch(url, { ...options, headers });
+        if (response.status === 401 || response.status === 403) {
+            throw new Error('Přístup zamítnut – chyba autorizace.');
+        }
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({ error: 'Chyba serveru' }));
+            throw new Error(err.error || 'Chyba serveru');
+        }
+        return response.json();
+    }
+
+    const api = {
+        async hledejOsobu(jmeno) { return secureFetch(`${API_URL}/api/hledej/${encodeURIComponent(jmeno)}`); },
+        async ulozNavstevnika(d) { return secureFetch(`${API_URL}/api/uloz-navstevnika`, {method:'POST', body:JSON.stringify(d)}); },
+        async zaznamenejPrichod(d) { return secureFetch(`${API_URL}/api/zaznamenej-prichod`, {method:'POST', body:JSON.stringify(d)}); },
+        async nactiAktivni() { return secureFetch(`${API_URL}/api/nacti-aktivni`); },
+        async zaznamenejOdchod(id) { return secureFetch(`${API_URL}/api/zaznamenej-odchod`, {method:'POST', body:JSON.stringify({dochazkaId: id})}); },
+        async nactiVsechnyCleny() { return secureFetch(`${API_URL}/api/nacti-vsechny-cleny`); },
+        async nactiPravidla() { return secureFetch(`${API_URL}/api/nacti-pravidla`); },
+        async ulozPravidlo(obsah, poradi) { return secureFetch(`${API_URL}/api/uloz-pravidlo`, {method:'POST', body:JSON.stringify({obsah, poradi})}); },
+        async smazPravidla() { return secureFetch(`${API_URL}/api/smaz-pravidla`, {method:'POST'}); },
+        async upravPravidlo(id, obsah, poradi) { return secureFetch(`${API_URL}/api/uprav-pravidlo`, {method:'POST', body:JSON.stringify({id, obsah, poradi})}); },
+        async smazStranku(id) { return secureFetch(`${API_URL}/api/smaz-stranku`, {method:'POST', body:JSON.stringify({id})}); },
+        async nactiDochazku() { return secureFetch(`${API_URL}/api/nacti-dochazku`); },
+        async exportDB() {
+
+            const response = await fetch(`${API_URL}/api/export-db`, {
+                headers: { 'X-API-Key': API_KEY }
+            });
+            if (!response.ok) throw new Error('Export selhal');
+            return response.blob();
+        },
+        async ulozWacomPodpis(data) { return secureFetch(`${API_URL}/api/uloz-wacom-podpis`, {method:'POST', body:JSON.stringify(data)}); },
+        async zkontrolujDuplicitu(d) { return secureFetch(`${API_URL}/api/zkontroluj-duplicitu`, {method:'POST', body:JSON.stringify(d)}); },
+        async smazOsobu(id) { return secureFetch(`${API_URL}/api/smaz-osobu`, {method:'POST', body:JSON.stringify({id})}); },
+        async stavKiosku(d) { return secureFetch(`${API_URL}/api/stav-kiosku`, {method:'POST', body:JSON.stringify(d)}); }
+    };
+
+    function showKioskAlert(title, message) {
+        document.getElementById('alertTitle').innerText = title;
+        document.getElementById('alertMessage').innerText = message;
+        document.getElementById('kioskAlert').style.display = 'flex';
+    }
+
+    var canvas, context;
+    var isDrawing = false, hasDrawnOnCanvas = false;
+    let wacomSignatureImageBase64 = null;
+    let aktuálníCanvasId = null;
+    const odchodJmena = {};
+
+    function getCanvasPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        let clientX = e.clientX, clientY = e.clientY;
+        if (e.touches && e.touches.length > 0) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
+        return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+    }
+
+    function startDraw(e) { e.preventDefault(); isDrawing = true; hasDrawnOnCanvas = true; const pos = getCanvasPos(e); context.beginPath(); context.moveTo(pos.x, pos.y); }
+    function draw(e) { if(!isDrawing) return; e.preventDefault(); const pos = getCanvasPos(e); context.lineTo(pos.x, pos.y); context.stroke(); }
+    function stopDraw(e) {
+        e.preventDefault(); isDrawing = false;
+        if(canvas.id==='canvasArrival' && hasDrawnOnCanvas) document.getElementById('biometric-score').innerHTML = "<span style='color:#2ecc71;'>" + t('arr.done') + "</span>";
+    }
+
+    function setTargetCanvas(cid) {
+        aktuálníCanvasId = cid;
+        const starePlatno = document.getElementById(cid);
+        const novePlatno = starePlatno.cloneNode(true);
+        starePlatno.parentNode.replaceChild(novePlatno, starePlatno);
+        canvas = document.getElementById(cid);
+        context = canvas.getContext("2d");
+        context.lineCap = 'round'; context.lineJoin = 'round'; context.strokeStyle = "#00205B"; context.lineWidth = 2.6;
+        hasDrawnOnCanvas = false; isDrawing = false; wacomSignatureImageBase64 = null;
+        if(cid === 'canvasArrival') document.getElementById('biometric-score').innerHTML = t('arr.waiting');
+        canvas.addEventListener('mousedown', startDraw); canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseup', stopDraw); canvas.addEventListener('mouseout', stopDraw);
+        canvas.addEventListener('touchstart', startDraw, {passive: false}); canvas.addEventListener('touchmove', draw, {passive: false}); canvas.addEventListener('touchend', stopDraw); canvas.addEventListener('touchcancel', stopDraw);
+
+        podpisSession = {
+            cid, canvas, ctx: context,
+            scaleX: wacom.connected ? canvas.width  / wacom.maxX : 1,
+            scaleY: wacom.connected ? canvas.height / wacom.maxY : 1,
+            strokes: []
+        };
+        padRezim('podpis');
+        refreshWacomUI();
+    }
+
+    let wacomModuleInstance = null;
+    let wacomInitError = null;
+    let wacomBusy = false;
+
+    const wacom = { stu: null, sdk: null, cap: null, maxX: 0, maxY: 0, maxP: 1023, productName: '', connected: false };
+
+    let podpisSession = null;
+    var diagPenActive = false, diagPenCounter = 0;
+
+    async function inicializovatWacomModul(vynutitNovy = false) {
+        if (vynutitNovy) { wacomModuleInstance = null; wacomInitError = null; }
+        if (wacomModuleInstance) return wacomModuleInstance;
+        if (wacomInitError) throw wacomInitError;
+        try {
+            const path = require('path');
+
+            const modulePath = path.join(__dirname, '../node_modules/@wacom/signature-sdk/dist/signature-sdk.cjs');
+            if (vynutitNovy) {
+                try { delete require.cache[require.resolve(modulePath)]; } catch (e) {}
+            }
+            const factory = require(modulePath);
+            const instance = (typeof factory === 'function') ? await factory()
+                           : (factory && typeof factory.default === 'function') ? await factory.default()
+                           : factory;
+            wacomModuleInstance = instance;
+            return instance;
+        } catch (err) { wacomInitError = err; throw err; }
+    }
+
+    function jeWasmPad(err) {
+        const m = String((err && err.message) || err || '');
+        return /memory access out of bounds|unreachable|table index is out of bounds|RuntimeError/i.test(m);
+    }
+
+    const spanek = (ms) => new Promise(r => setTimeout(r, ms));
+
+    let stuFronta = Promise.resolve();
+    function stuUloha(fn) {
+        const p = stuFronta.then(fn, fn);
+        stuFronta = p.catch(() => {});
+        return p;
+    }
+
+    async function tvrdyReset(hidDevice) {
+        const stu = wacom.stu;
+        wacom.stu = null; wacom.connected = false;
+        if (stu) {
+            try { stu.stopEventHandler(); } catch (e) {}
+            try { if (typeof stu.removeAllPenDataListeners === 'function') stu.removeAllPenDataListeners(); } catch (e) {}
+            try { await Promise.resolve(stu.disconnect()); } catch (e) {}
+        }
+        try { if (hidDevice && hidDevice.opened) await hidDevice.close(); } catch (e) {}
+        try {
+            const vsechny = await navigator.hid.getDevices();
+            for (const d of vsechny) {
+                if (d.vendorId === 0x056A && d.opened) { try { await d.close(); } catch (e) {} }
+            }
+        } catch (e) {}
+        wacomModuleInstance = null; wacomInitError = null;
+    }
+
+    function setWacomStatus(canvasId, status, text) {
+        const statusEl = canvasId === 'canvasRegister' ? document.getElementById('wacom-status-reg') : document.getElementById('wacom-status-arr');
+        const textEl   = canvasId === 'canvasRegister' ? document.getElementById('wacom-status-reg-text') : document.getElementById('wacom-status-arr-text');
+        if (statusEl && textEl) {
+            statusEl.style.display = (status === 'connected') ? 'none' : 'flex';
+            statusEl.className = `wacom-status ${status}`;
+            textEl.innerText = text;
+        }
+
+        const chip = document.getElementById('wacom-chip');
+        if (chip) {
+            chip.style.display = wacom.connected ? 'none' : 'flex';
+            chip.className = 'wacom-chip ' + (wacom.connected ? 'on' : 'off');
+            chip.querySelector('span').innerText = t(wacom.connected ? 'tablet.connected' : 'tablet.disconnected');
+        }
+    }
+    function refreshWacomUI() {
+        document.querySelectorAll('.wacom-connect-btn').forEach(b => b.style.display = wacom.connected ? 'none' : 'block');
+        const st = wacom.connected ? 'connected' : 'disconnected';
+        const tx = t(wacom.connected ? 'tablet.connected' : 'tablet.notconnected');
+        setWacomStatus('canvasRegister', st, tx);
+        setWacomStatus('canvasArrival', st, tx);
+    }
+
+    async function zapnoutWacom(interactive = true) {
+        if (wacomBusy || wacom.connected) return wacom.connected;
+        wacomBusy = true;
+        try {
+            return await stuUloha(() => zapnoutWacomJadro(interactive, false));
+        } finally { wacomBusy = false; }
+    }
+
+    async function zapnoutWacomJadro(interactive, jeOpakovani) {
+        let device = null;
+        try {
+            if (wacom.stu) { await tvrdyReset(null); }
+            const sdk = await inicializovatWacomModul(jeOpakovani);
+            if (!sdk.STUDevice) throw new Error('Ve WASM modulu chybí třída STUDevice.');
+
+            try {
+                const known = await navigator.hid.getDevices();
+                const wacomy = known.filter(d => d.vendorId === 0x056A);
+                device = wacomy.find(d => !d.opened) || wacomy[0] || null;
+            } catch (e) {}
+            if (!device) {
+                if (!interactive) throw new Error('silent-no-device');
+                const hids = await navigator.hid.requestDevice({ filters: [{ vendorId: 0x056A }] });
+                if (!hids || hids.length === 0) throw new Error('Wacom tablet nenalezen. Zkontrolujte USB připojení.');
+                device = hids[0];
+            }
+
+            try { if (device.opened) { await device.close(); await spanek(300); } } catch (e) {}
+
+            if (jeOpakovani) {
+                try {
+                    await device.open();
+                    await spanek(250);
+                    await device.close();
+                    await spanek(400);
+                } catch (e) {}
+            }
+
+            const stu = new sdk.STUDevice(device);
+            await Promise.race([
+                stu.connect(false),
+                new Promise((_, rej) => setTimeout(() => rej(new Error('connect-timeout')), 6000))
+            ]);
+
+            try { await Promise.resolve(stu.reset()); await spanek(300); } catch (e) {}
+            try { await Promise.resolve(stu.getInformation()); } catch (e) {}
+
+            let cap = null, maxX = 0, maxY = 0;
+            for (let i = 0; i < 20; i++) {
+                try { cap = await Promise.resolve(stu.getCapability()); } catch (e) { cap = null; }
+                maxX = (cap && cap.tabletMaxX) ? cap.tabletMaxX : 0;
+                maxY = (cap && cap.tabletMaxY) ? cap.tabletMaxY : 0;
+                if (maxX && maxY) break;
+                if (i === 4 || i === 10) { try { await Promise.resolve(stu.reset()); await spanek(300); } catch (e) {} }
+                await spanek(150);
+            }
+            if (!maxX || !maxY) {
+                await tvrdyReset(device);
+                if (!jeOpakovani) {
+                    console.warn('Tablet neodpověděl, zkouším znovu s novým WASM modulem…');
+                    await spanek(500);
+                    return await zapnoutWacomJadro(interactive, true);
+                }
+                throw new Error('Tablet neodpovídá (rozměry = 0). Odpojte jej z USB a znovu připojte.');
+            }
+
+            wacom.stu = stu; wacom.sdk = sdk; wacom.cap = cap;
+            wacom.maxX = maxX; wacom.maxY = maxY;
+            wacom.maxP = (cap && cap.tabletMaxPressure) ? cap.tabletMaxPressure : 1023;
+            wacom.productName = device.productName || 'Wacom STU-430';
+            wacom.connected = true;
+
+            let penDown = false;
+            stu.addPenDataListener(sdk.PenDataType.PEN_DATA, (pd) => {
+                try {
+                    const s = podpisSession;
+                    if (!s) return;
+                    const down = (pd.sw === 1) || (pd.pressure > 0);
+                    const t = Date.now();
+                    if (down) {
+                        if (!penDown) { s.strokes.push([]); s.ctx.beginPath(); s.ctx.moveTo(pd.x * s.scaleX, pd.y * s.scaleY); penDown = true; }
+                        else { s.ctx.lineTo(pd.x * s.scaleX, pd.y * s.scaleY); s.ctx.stroke(); }
+                        s.strokes[s.strokes.length - 1].push({ x: pd.x, y: pd.y, p: pd.pressure, t });
+                        if (diagPenActive) diagPenCounter++;
+                        hasDrawnOnCanvas = true;
+                        if (s.cid === 'canvasArrival')
+                            document.getElementById('biometric-score').innerHTML = "<span style='color:#0e6b39;'>" + t('arr.saving') + "</span>";
+                    } else { penDown = false; }
+                } catch (e) {}
+            });
+            stu.startEventHandler();
+
+            try { await Promise.resolve(stu.setClearScreen()); } catch (e) {}
+            padRezim(podpisSession ? 'podpis' : 'logo');
+
+            refreshWacomUI();
+            return true;
+        } catch (error) {
+            const jeConnectTimeout = String(error && error.message) === 'connect-timeout';
+            if ((jeWasmPad(error) || jeConnectTimeout) && device) {
+                await tvrdyReset(device);
+                if (!jeOpakovani) {
+                    console.warn('Připojení se zaseklo, zkouším čistý restart…', error.message || error);
+                    await spanek(600);
+                    return await zapnoutWacomJadro(interactive, true);
+                }
+            }
+            if (String(error.message) !== 'silent-no-device') {
+                console.error('Chyba Wacom:', error);
+                if (interactive) showKioskAlert('Tablet se nepodařilo spustit', (error.message || String(error)) + '\n\nMůžete se podepsat i prstem nebo myší.');
+            }
+            refreshWacomUI();
+            return false;
+        }
+    }
+
+    let padTimer = null;
+    function padRezim(rezim) {
+        if (!wacom.connected) return;
+        clearTimeout(padTimer);
+        padTimer = setTimeout(() => {
+            stuUloha(async () => {
+                if (!wacom.connected || !wacom.stu) return;
+                try {
+                    if (rezim === 'podpis') {
+                        try { await Promise.resolve(wacom.stu.setClearScreen()); } catch (e) {}
+                        try { await Promise.resolve(wacom.stu.setInkingMode(wacom.sdk.InkingMode.On)); } catch (e) {}
+                    } else {
+                        try { await Promise.resolve(wacom.stu.setInkingMode(wacom.sdk.InkingMode.Off)); } catch (e) {}
+                        try { await Promise.resolve(wacom.stu.setClearScreen()); } catch (e) {}
+                        await zobrazLogoNaPadu();
+                    }
+                } catch (e) {
+                    console.warn('padRezim:', e.message || e);
+                    if (jeWasmPad(e)) { await tvrdyReset(null); refreshWacomUI(); }
+                }
+            });
+        }, 60);
+    }
+
+    function smazDisplejTabletu() {
+        if (!wacom.connected || !wacom.stu) return Promise.resolve();
+        return stuUloha(async () => {
+            try { await Promise.resolve(wacom.stu.setInkingMode(wacom.sdk.InkingMode.Off)); } catch (e) {}
+            try { await Promise.resolve(wacom.stu.setClearScreen()); } catch (e) {}
+        });
+    }
+
+    let padLogoImg = null;
+    let padLogoVlastni = false;
+    let padLogoHlasena = false;
+    function nactiPadLogo() {
+        if (padLogoImg) return Promise.resolve(padLogoImg);
+        return new Promise((resolve) => {
+            try {
+                const fs = require('fs');
+                const path = require('path');
+                const zDat = (typeof THEME.tabletObrazekData === 'string' && THEME.tabletObrazekData.startsWith('data:image/')) ? THEME.tabletObrazekData
+                    : (!THEME.tabletObrazek && typeof THEME.logoData === 'string' && THEME.logoData.startsWith('data:image/')) ? THEME.logoData
+                    : null;
+                if (zDat) {
+                    padLogoVlastni = !!THEME.tabletObrazekData;
+                    const img = new Image();
+                    img.onload = () => { padLogoImg = img; console.log('Obrázek pro tablet načten z motivu.'); resolve(img); };
+                    img.onerror = () => { console.warn('Obrázek pro tablet z motivu se nepodařilo načíst.'); resolve(null); };
+                    img.src = zDat;
+                    return;
+                }
+                const cesty = [];
+                if (THEME.tabletObrazek) cesty.push(THEME.tabletObrazek);
+                if (THEME.logo) cesty.push(THEME.logo);
+                cesty.push(path.join(__dirname, 'logo-lintech-dark.png'));
+                const soubor = cesty.find(p => p && fs.existsSync(p));
+                if (!soubor) {
+                    if (!padLogoHlasena) {
+                        padLogoHlasena = true;
+                        console.warn('Logo pro tablet nenalezeno – použije se textová verze. Hledal jsem:\n' + cesty.join('\n'));
+                    }
+                    resolve(null); return;
+                }
+                padLogoVlastni = !!THEME.tabletObrazek && soubor === THEME.tabletObrazek;
+                const pripona = path.extname(soubor).toLowerCase();
+                const mime = pripona === '.svg' ? 'svg+xml'
+                    : (pripona === '.jpg' || pripona === '.jpeg') ? 'jpeg'
+                    : pripona === '.webp' ? 'webp' : 'png';
+                const b64 = fs.readFileSync(soubor).toString('base64');
+                const img = new Image();
+                img.onload = () => { padLogoImg = img; console.log('Obrázek pro tablet načten:', soubor); resolve(img); };
+                img.onerror = () => { console.warn('Obrázek pro tablet se nepodařilo načíst (poškozený soubor?):', soubor); resolve(null); };
+                img.src = `data:image/${mime};base64,${b64}`;
+            } catch (e) { resolve(null); }
+        });
+    }
+
+    async function zobrazLogoNaPadu() {
+        if (!wacom.connected) return;
+        const sdk = wacom.sdk, stu = wacom.stu;
+        const W = (wacom.cap && wacom.cap.screenWidth)  ? wacom.cap.screenWidth  : 320;
+        const H = (wacom.cap && wacom.cap.screenHeight) ? wacom.cap.screenHeight : 200;
+        const job = (async () => {
+            const off = document.createElement('canvas'); off.width = W; off.height = H;
+            const c = off.getContext('2d');
+            c.fillStyle = '#FFFFFF'; c.fillRect(0, 0, W, H);
+
+            const logo = await nactiPadLogo();
+            const textClaim = THEME.tabletText1 || 'Crafted to Perfection';
+            const textVyzva = THEME.tabletText2 || 'Vyčkejte prosím na pokyn k podpisu';
+
+            const napis = (text, vaha, velikost, y) => {
+                if (!text) return;
+                c.fillStyle = '#000000';
+                c.textAlign = 'center'; c.textBaseline = 'middle';
+                const sirkaPri = px => { c.font = `${vaha} ${px}px Arial, sans-serif`; return c.measureText(text).width; };
+                let px = velikost;
+                while (px > Math.max(11, velikost * 0.7) && sirkaPri(px) > W * 0.94) px--;
+                if (sirkaPri(px) <= W * 0.94) { c.fillText(text, W / 2, y); return; }
+                const slova = text.split(' ');
+                let radek1 = text, radek2 = '';
+                if (slova.length > 1) {
+                    let nejlepsi = 1, rozdil = Infinity;
+                    for (let i = 1; i < slova.length; i++) {
+                        const a = slova.slice(0, i).join(' ').length, b = slova.slice(i).join(' ').length;
+                        if (Math.abs(a - b) < rozdil) { rozdil = Math.abs(a - b); nejlepsi = i; }
+                    }
+                    radek1 = slova.slice(0, nejlepsi).join(' ');
+                    radek2 = slova.slice(nejlepsi).join(' ');
+                }
+                px = velikost;
+                const nejsirsi = pxx => { c.font = `${vaha} ${pxx}px Arial, sans-serif`; return Math.max(c.measureText(radek1).width, c.measureText(radek2).width); };
+                while (px > 10 && nejsirsi(px) > W * 0.94) px--;
+                c.font = `${vaha} ${px}px Arial, sans-serif`;
+                c.fillText(radek1, W / 2, y - px * 0.62);
+                if (radek2) c.fillText(radek2, W / 2, y + px * 0.62);
+            };
+
+            if (logo && padLogoVlastni) {
+                const maxW = W * 0.94, maxH = H * 0.72;
+                const scale = Math.min(maxW / logo.width, maxH / logo.height);
+                const lw = Math.max(1, Math.round(logo.width * scale));
+                const lh = Math.max(1, Math.round(logo.height * scale));
+                c.imageSmoothingEnabled = true;
+                c.drawImage(logo, Math.round((W - lw) / 2), Math.round(H * 0.40 - lh / 2), lw, lh);
+                napis(textVyzva, 700, Math.floor(H * 0.075), H * 0.88);
+            } else if (logo) {
+                const maxW = W * 0.86, maxH = H * 0.46;
+                const scale = Math.min(maxW / logo.width, maxH / logo.height);
+                const lw = Math.max(1, Math.round(logo.width * scale));
+                const lh = Math.max(1, Math.round(logo.height * scale));
+                c.imageSmoothingEnabled = true;
+                c.drawImage(logo, Math.round((W - lw) / 2), Math.round(H * 0.28 - lh / 2), lw, lh);
+
+                napis(textClaim, 700, Math.floor(H * 0.085), H * 0.62);
+                napis(textVyzva, 700, Math.floor(H * 0.075), H * 0.85);
+            } else {
+                c.fillStyle = '#000000';
+                c.textAlign = 'center'; c.textBaseline = 'middle';
+                c.font = `800 ${Math.floor(H * 0.24)}px Arial, sans-serif`;
+                c.fillText((window.BRAND ? BRAND.company : 'GuestBook'), W / 2, H * 0.30);
+
+                const px = W * 0.845, py = H * 0.20, r = H * 0.055, th = Math.max(2, Math.round(H * 0.020));
+                c.fillRect(px - th / 2, py - r, th, 2 * r);
+                c.fillRect(px - r, py - th / 2, 2 * r, th);
+                napis(textClaim, 700, Math.floor(H * 0.085), H * 0.56);
+                napis(textVyzva, 700, Math.floor(H * 0.075), H * 0.84);
+            }
+
+            let vec = null;
+            try {
+                vec = await Promise.resolve(sdk.ProtocolHelper.resizeAndFlatten(
+                    off, 0, 0, W, H, W, H,
+                    sdk.EncodingMode.EncodingMode_1bit, sdk.Scale.Scale_Stretch,
+                    'white', 0, false
+                ));
+                await Promise.resolve(stu.writeImage(sdk.EncodingMode.EncodingMode_1bit, vec));
+            } finally { try { if (vec && typeof vec.delete === 'function') vec.delete(); } catch (e) {} }
+        })();
+        await Promise.race([job, new Promise(r => setTimeout(r, 4000))]);
+    }
+
+    function fssNaBajty(raw) {
+        if (!raw) return null;
+        if (raw instanceof Uint8Array) return raw;
+        if (Array.isArray(raw)) return Uint8Array.from(raw);
+        if (typeof raw.size === 'function' && typeof raw.get === 'function') {
+            const n = raw.size(); const out = new Uint8Array(n);
+            for (let i = 0; i < n; i++) out[i] = raw.get(i);
+            return out;
+        }
+        if (typeof raw === 'string') {
+            const s = raw.trim();
+            if (/^\d+(,\d+)*$/.test(s)) return Uint8Array.from(s.split(',').map(Number));
+            const out = new Uint8Array(s.length);
+            for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
+            return out;
+        }
+        return null;
+    }
+
+    let posledniFssChyba = null;
+    async function vytvorFSS(kdo, duvod) {
+        posledniFssChyba = null;
+        if (!wacom.connected || !podpisSession) return null;
+        const s = podpisSession;
+        const tahy = s.strokes.filter(st => st.length > 1);
+        if (tahy.length === 0) return null;
+        if (!WACOM_LICENCE_KEY || !WACOM_LICENCE_SECRET) {
+            posledniFssChyba = 'chybí Wacom licence v .env';
+            console.warn('FSS přeskočen: chybí Wacom licence v .env');
+            return null;
+        }
+        return stuUloha(() => vytvorFSSJadro(tahy, kdo, duvod));
+    }
+
+    async function vytvorFSSJadro(tahy, kdo, duvod) {
+        const sdk = wacom.sdk;
+        let sigObj = null, sv = null;
+        const pvs = [];
+        try {
+            sigObj = new sdk.SigObj();
+            const licenceOk = await Promise.resolve(sigObj.setLicence(WACOM_LICENCE_KEY, WACOM_LICENCE_SECRET));
+            if (licenceOk === false) throw new Error('Wacom licenci server odmítl – zkontrolujte klíč, secret a přístup kiosku na internet');
+
+            sv = new sdk.StrokeVector();
+            for (let si = 0; si < tahy.length; si++) {
+                const pv = new sdk.PointVector(); pvs.push(pv);
+                for (const b of tahy[si]) {
+                    pv.push_back({
+                        x: Math.floor(b.x), y: Math.floor(b.y),
+                        p: Math.floor(Math.min(1000, (b.p / wacom.maxP) * 1000)),
+                        t: b.t, azimuth: 0, altitude: 0, twist: 0,
+                        is_down: true, stroke_id: si
+                    });
+                }
+                sv.push_back({ points: pv });
+            }
+
+            const device = {
+                device_max_X: wacom.maxX, device_max_Y: wacom.maxY, device_max_P: 1000,
+                device_pixels_per_m_x: Math.round(wacom.maxX / 0.096),
+                device_pixels_per_m_y: Math.round(wacom.maxY / 0.060),
+                device_origin_X: 0, device_origin_Y: 1, device_unit_pixels: true
+            };
+
+            const ok = await Promise.resolve(sigObj.generateSignature(
+                String(kdo || 'Návštěvník'), String(duvod || ('Evidence návštěvy ' + (window.BRAND ? BRAND.company : 'GuestBook'))), '',
+                sdk.KeyType.None, null, sv, device,
+                navigator.platform || 'kiosk', wacom.productName, '', 1000
+            ));
+            if (!ok) throw new Error('generateSignature vrátil false');
+
+            const raw = await Promise.resolve(sigObj.getSigData());
+            const bytes = fssNaBajty(raw);
+            try { if (raw && typeof raw.delete === 'function') raw.delete(); } catch (e) {}
+            if (!bytes || bytes.length < 32) throw new Error('Prázdná FSS data');
+
+            let bin = '';
+            const CHUNK = 0x8000;
+            for (let i = 0; i < bytes.length; i += CHUNK) {
+                bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+            }
+            const fssB64 = btoa(bin);
+            console.log('FSS vygenerován (' + bytes.length + ' B, base64 ' + fssB64.length + ' znaků)');
+            return fssB64;
+        } catch (e) {
+            posledniFssChyba = e.message || String(e);
+            console.warn('FSS se nepodařilo vytvořit (ukládám jen PNG):', e.message || e);
+            return null;
+        } finally {
+            try { if (sv) sv.delete(); } catch (e) {}
+            for (const pv of pvs) { try { pv.delete(); } catch (e) {} }
+            try { if (sigObj) sigObj.delete(); } catch (e) {}
+        }
+    }
+
+    function vycistiPodpis() {
+        if (!podpisSession) return;
+        const s = podpisSession;
+        s.ctx.clearRect(0, 0, s.canvas.width, s.canvas.height);
+        s.strokes = [];
+        hasDrawnOnCanvas = false;
+        wacomSignatureImageBase64 = null;
+        padRezim('podpis');
+    }
+
+    function odpojWacom() {
+        wacomBusy = false;
+        stuUloha(async () => {
+            await tvrdyReset(null);
+            try {
+                const known = await navigator.hid.getDevices();
+                const d = known.find(x => x.vendorId === 0x056A);
+                if (d && d.opened) await d.close();
+            } catch (e) {}
+            wacomModuleInstance = null;
+            wacomInitError = null;
+            refreshWacomUI();
+            try { api.stavKiosku({ tablet: false }); } catch (err) {}
+        });
+    }
+
+    let logoTapy = [];
+    let pinZadany = '';
+    document.querySelector('.header .logo').addEventListener('click', () => {
+        const now = Date.now();
+        logoTapy = logoTapy.filter(t => now - t < 3000);
+        logoTapy.push(now);
+        if (logoTapy.length >= 5) {
+            logoTapy = [];
+            if (!ENV.ADMIN_PIN) { showKioskAlert('Administrace', 'V souboru .env chybí ADMIN_PIN.'); return; }
+            otevriPin();
+        }
+    });
+    function otevriPin() {
+        pinZadany = '';
+        vykresliPinTecky();
+        document.getElementById('pinOverlay').style.display = 'flex';
+    }
+    function zavriPin() { document.getElementById('pinOverlay').style.display = 'none'; pinZadany = ''; }
+    function vykresliPinTecky() {
+        const delka = Math.max(4, (ENV.ADMIN_PIN || '').length);
+        document.getElementById('pin-dots').innerHTML =
+            Array.from({length: delka}, (_, i) => `<span class="pin-dot${i < pinZadany.length ? ' full' : ''}"></span>`).join('');
+    }
+    function pinStisk(c) {
+        pinZadany += c;
+        vykresliPinTecky();
+        if (pinZadany.length >= (ENV.ADMIN_PIN || '').length) {
+            if (pinZadany === ENV.ADMIN_PIN) { zavriPin(); switchView('admin'); }
+            else {
+                pinZadany = '';
+                const box = document.querySelector('#pinOverlay .kiosk-alert-box');
+                box.style.animation = 'none'; void box.offsetWidth;
+                box.style.animation = 'pinShake .35s ease';
+                vykresliPinTecky();
+            }
+        }
+    }
+    function pinSmaz() { pinZadany = pinZadany.slice(0, -1); vykresliPinTecky(); }
+
+    var vybranyNavstevnikId = null;
+    var nactenaPravidla = [];
+    var aktualniSlide = 0;
+
+    function resetAppState() {
+        dup.email = false; dup.telefon = false;
+        document.querySelectorAll('.input-group').forEach(g => g.classList.remove('ok', 'bad'));
+        document.querySelectorAll('.field-hint').forEach(h => h.innerText = '');
+        const rs = document.getElementById('reg-suggestions'); if (rs) rs.style.display = 'none';
+
+        podpisSession = null;
+        vybranyNavstevnikId = null;
+        document.querySelectorAll('input:not([type=hidden]):not([type=file])').forEach(i => i.value = '');
+        hasDrawnOnCanvas = false;
+        wacomSignatureImageBase64 = null;
+        padRezim('logo');
+    }
+
+    function switchView(id) {
+        if (id === 'home') resetAppState();
+        document.querySelectorAll('.card').forEach(c => c.style.display = 'none');
+        document.getElementById('screen-' + id).style.display = 'flex';
+        if (id === 'rules') { setTargetCanvas('canvasRegister'); initRulesViewer(); }
+        if (id === 'arrival-confirm') { setTargetCanvas('canvasArrival'); }
+        if (id === 'admin') { setTargetCanvas('canvasDiag'); spustDiagnostiku(); }
+    }
+
+    const kontrola = {
+        jmeno:   v => /^\p{L}[\p{L} .'-]{2,}$/u.test(v.trim()) && v.trim().includes(' '),
+        email:   v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()),
+        telefon: v => /^\+?[0-9 ]{9,17}$/.test(v.trim()) && v.replace(/\D/g,'').length >= 9
+    };
+    function oznacPole(grpId, hintId, stav, text) {
+        const g = document.getElementById(grpId);
+        g.classList.remove('ok', 'bad');
+        if (stav) g.classList.add(stav);
+        document.getElementById(hintId).innerText = text || '';
+    }
+    function zkontrolujRegistracniPole(tiche = false) {
+        const j = document.getElementById('reg-jmeno').value;
+        const e = document.getElementById('reg-email').value;
+        const t = document.getElementById('reg-telefon').value;
+        let ok = true;
+        if (!j.trim()) { if (!tiche) oznacPole('grp-jmeno','hint-jmeno','bad','Vyplňte prosím jméno a příjmení.'); ok = false; }
+        else if (!kontrola.jmeno(j)) { oznacPole('grp-jmeno','hint-jmeno','bad','Zadejte prosím jméno i příjmení.'); ok = false; }
+        else oznacPole('grp-jmeno','hint-jmeno','ok','');
+        if (!e.trim()) { if (!tiche) oznacPole('grp-email','hint-email','bad','Vyplňte prosím e-mail.'); ok = false; }
+        else if (!kontrola.email(e)) { oznacPole('grp-email','hint-email','bad','Tohle nevypadá jako platný e-mail.'); ok = false; }
+        else if (dup.email) { oznacPole('grp-email','hint-email','bad','Tento e-mail už máme v systému. Použijte volbu „Už jsem u vás byl(a)".'); ok = false; }
+        else oznacPole('grp-email','hint-email','ok','');
+        if (!t.trim()) { if (!tiche) oznacPole('grp-telefon','hint-telefon','bad','Vyplňte prosím telefon.'); ok = false; }
+        else if (!kontrola.telefon(t)) { oznacPole('grp-telefon','hint-telefon','bad','Zadejte číslo ve tvaru +420 123 456 789.'); ok = false; }
+        else if (dup.telefon) { oznacPole('grp-telefon','hint-telefon','bad','Toto číslo už máme v systému. Použijte volbu „Už jsem u vás byl(a)".'); ok = false; }
+        else oznacPole('grp-telefon','hint-telefon','ok','');
+        return ok;
+    }
+
+    const dup = { email: false, telefon: false };
+    let dupTimer = { email: null, telefon: null };
+    function hlidejDuplicitu(pole, inputId) {
+        const el = document.getElementById(inputId);
+        el.addEventListener('input', () => {
+            dup[pole] = false;
+            clearTimeout(dupTimer[pole]);
+            const v = el.value.trim();
+            if (!kontrola[pole](v)) return;
+            dupTimer[pole] = setTimeout(async () => {
+                try {
+                    const r = await api.zkontrolujDuplicitu(pole === 'email' ? { email: v } : { telefon: v });
+                    if (r && r.duplicitni && r.pole === pole) { dup[pole] = true; zkontrolujRegistracniPole(true); }
+                } catch (e) {}
+            }, 450);
+        });
+    }
+    hlidejDuplicitu('email', 'reg-email');
+    hlidejDuplicitu('telefon', 'reg-telefon');
+
+    ['reg-email','reg-telefon'].forEach(id =>
+        document.getElementById(id).addEventListener('input', () => zkontrolujRegistracniPole(true)));
+
+    const regJmenoInput = document.getElementById('reg-jmeno');
+    const regSugg = document.getElementById('reg-suggestions');
+    let regSuggTimer = null;
+    regJmenoInput.addEventListener('input', () => {
+        zkontrolujRegistracniPole(true);
+        clearTimeout(regSuggTimer);
+        const text = regJmenoInput.value.trim();
+        if (text.length < 3) { regSugg.style.display = 'none'; return; }
+        regSuggTimer = setTimeout(async () => {
+            try {
+                const res = await api.hledejOsobu(text);
+                if (res && res.length > 0) {
+                    regSugg.innerHTML = '<div style="padding:10px 18px; font-size:13px; color:#8a929e; border-bottom:1px solid var(--line);">Nejste to náhodou vy? Klepnutím přeskočíte registraci:</div>';
+                    res.slice(0, 4).forEach(o => {
+                        const div = document.createElement('div');
+                        div.className = 'suggestion-item';
+                        div.innerHTML = `${escHtml(o.jmeno)}<small>${escHtml(o.spolecnost || o.email || 'registrovaný návštěvník')}</small>`;
+                        div.onclick = () => {
+                            regSugg.style.display = 'none';
+                            if (o.posledni_stavy === 'Uvnitr') { showKioskAlert('Už jste přihlášen(a)', 'Podle záznamů jste v budově. Pokud odcházíte, použijte prosím tlačítko Odcházím na úvodní obrazovce.'); return; }
+                            vybranyNavstevnikId = o.id;
+                            document.getElementById('arr-name').innerText = o.jmeno;
+                            document.getElementById('arr-detail').innerText = o.spolecnost || o.email || '';
+                            switchView('arrival-confirm');
+                        };
+                        regSugg.appendChild(div);
+                    });
+                    regSugg.style.display = 'block';
+                } else regSugg.style.display = 'none';
+            } catch (e) { regSugg.style.display = 'none'; }
+        }, 250);
+    });
+    regJmenoInput.addEventListener('blur', () => setTimeout(() => regSugg.style.display = 'none', 250));
+
+    async function validateAndGoToRules() {
+        const j = document.getElementById('reg-jmeno').value;
+        const e = document.getElementById('reg-email').value;
+
+        if (!zkontrolujRegistracniPole()) return;
+
+        try {
+            const dup = await api.zkontrolujDuplicitu({
+                email: e.trim(),
+                telefon: document.getElementById('reg-telefon').value.trim()
+            });
+            if (dup && dup.duplicitni) {
+                if (dup.pole === 'email') oznacPole('grp-email', 'hint-email', 'bad', 'Tento e-mail už je registrovaný – použijte „Už jsem u vás byl(a)".');
+                else oznacPole('grp-telefon', 'hint-telefon', 'bad', 'Toto číslo už je registrované – použijte „Už jsem u vás byl(a)".');
+                showKioskAlert('Už vás známe', dup.pole === 'email'
+                    ? 'Tento e-mail už je v systému registrovaný. Vraťte se prosím na úvod a zvolte „Už jsem u vás byl(a)".'
+                    : 'Toto telefonní číslo už je v systému registrované. Vraťte se prosím na úvod a zvolte „Už jsem u vás byl(a)".');
+                return;
+            }
+        } catch (err) {}
+
+        try {
+            nactenaPravidla = await api.nactiPravidla();
+            if (!nactenaPravidla || nactenaPravidla.length === 0) nactenaPravidla = [{obsah: "<h2>Bezpečnost především</h2><p>Po areálu se pohybujte pouze v doprovodu odpovědné osoby a dbejte pokynů personálu.</p>"}];
+            switchView('rules');
+        } catch (error) { showKioskAlert("Nelze načíst pokyny", error.message); }
+    }
+
+    var pdfZoom = 100;
+    function zoomPokynu(smer) {
+        pdfZoom = smer === 0 ? 100 : Math.min(250, Math.max(100, pdfZoom + smer * 25));
+        aplikujPdfZoom();
+    }
+    window.zoomPokynu = zoomPokynu;
+    function aplikujPdfZoom() {
+        document.querySelectorAll('.rule-page.is-image img').forEach(img => { img.style.width = pdfZoom + '%'; });
+        const el = document.getElementById('rules-zoom-val');
+        if (el) el.innerHTML = pdfZoom + '&nbsp;%';
+    }
+    function initRulesViewer() {
+        aktualniSlide = 0;
+        pdfZoom = 100;
+        const container = document.getElementById('rules-content-container');
+        container.innerHTML = '';
+        nactenaPravidla.forEach((p, idx) => {
+            const div = document.createElement('div');
+            const jeObrazek = /^\s*<img/i.test(p.obsah);
+            div.className = 'rule-page' + (jeObrazek ? ' is-image' : '') + (idx === 0 ? ' active' : '');
+            div.id = 'slide-' + idx;
+            div.innerHTML = p.obsah;
+            if (jeObrazek) div.querySelectorAll('img').forEach(img => {
+                img.style.maxWidth = 'none';
+                img.style.width = '100%';
+                img.style.height = 'auto';
+            });
+            container.appendChild(div);
+        });
+        aplikujPdfZoom();
+        updateRulesUI();
+    }
+    function prevRule() { if(aktualniSlide > 0) { aktualniSlide--; updateRulesUI(); } }
+    function nextRule() { if(aktualniSlide < nactenaPravidla.length - 1) { aktualniSlide++; updateRulesUI(); } }
+    function updateRulesUI() {
+        document.querySelectorAll('.rule-page').forEach(el => el.classList.remove('active'));
+        const aktivni = document.getElementById('slide-' + aktualniSlide);
+        aktivni.classList.add('active');
+        aktivni.scrollTop = 0;
+        const zoomEl = document.getElementById('rules-zoom');
+        if (zoomEl) zoomEl.classList.toggle('show', aktivni.classList.contains('is-image'));
+        const n = nactenaPravidla.length;
+        document.getElementById('rules-counter').innerText = t('rules.counter', { a: aktualniSlide + 1, n: n });
+        document.getElementById('rules-bar-fill').style.width = ((aktualniSlide + 1) / n * 100) + '%';
+        document.getElementById('btn-prev-rule').style.visibility = aktualniSlide === 0 ? 'hidden' : 'visible';
+        const posledni = aktualniSlide === n - 1;
+        document.getElementById('btn-next-rule').style.visibility = posledni ? 'hidden' : 'visible';
+        document.getElementById('register-signature-area').classList.toggle('show', posledni);
+    }
+
+    document.getElementById('submitRegBtn').addEventListener('click', async () => {
+        if (!hasDrawnOnCanvas) { showKioskAlert("Ještě podpis", "Podepište se prosím na tabletu, nebo prstem přímo na obrazovce."); return; }
+        const podpis = wacomSignatureImageBase64 || canvas.toDataURL("image/png");
+        const jmeno = document.getElementById('reg-jmeno').value;
+        const fss = await vytvorFSS(jmeno, 'Registrace návštěvníka – ' + (window.BRAND ? BRAND.company : ''));
+        smazDisplejTabletu(); 
+        const data = {
+            jmeno,
+            email: document.getElementById('reg-email').value,
+            telefon: document.getElementById('reg-telefon').value,
+            spolecnost: document.getElementById('reg-spolecnost').value,
+            podpis,
+            fss
+        };
+        try {
+            const res = await api.ulozNavstevnika(data);
+            if(res.success) {
+                vybranyNavstevnikId = res.id;
+                document.getElementById('arr-name').innerText = data.jmeno;
+                document.getElementById('arr-detail').innerText = data.spolecnost || data.email;
+                const krestni = (data.jmeno || '').trim().split(/\s+/)[0];
+                ukazOverlay('regDoneOverlay', 'regdone-title',
+                    krestni ? t('ov.regdone.title') + ', ' + krestni + '!' : t('ov.regdone.title'),
+                    4, () => switchView('arrival-confirm'));
+            }
+        } catch(e) { showKioskAlert("Něco se nepovedlo", e.message); }
+    });
+
+    document.getElementById('submitArrivalBtn').addEventListener('click', async () => {
+        if (!hasDrawnOnCanvas) { showKioskAlert("Ještě podpis", "Podepište se prosím na tabletu, nebo prstem přímo na obrazovce."); return; }
+        const fss = await vytvorFSS(document.getElementById('arr-name').innerText, 'Potvrzení vstupu – ' + (window.BRAND ? BRAND.company : ''));
+        smazDisplejTabletu(); 
+        const dataVstup = {
+            navstevnikId: vybranyNavstevnikId,
+            podpisVstup: wacomSignatureImageBase64 || canvas.toDataURL("image/png"),
+            fss
+        };
+        try {
+            const res = await api.zaznamenejPrichod(dataVstup);
+            if (res.success) {
+                const jmeno = document.getElementById('arr-name').innerText.trim();
+                ukazOverlay('welcomeOverlay', 'welcome-title', jmeno ? t('ov.welcome.hello', { name: jmeno.split(' ')[0] }) : t('ov.welcome.title'), 5);
+            }
+        } catch(e) { showKioskAlert("Příchod se nepodařilo uložit", e.message); }
+    });
+
+    async function openDepartureView() {
+        switchView('departure');
+        const list = document.getElementById('active-visitors-list');
+        list.innerHTML = 'Načítám...';
+        try {
+            const v = await api.nactiAktivni();
+            list.innerHTML = '';
+            if(v.length === 0) { list.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#8a929e; font-size:17px; margin-top:30px;">Momentálně tu nikoho nemáme – všichni návštěvníci už odešli.</p>'; return; }
+            v.forEach(x => {
+                odchodJmena[x.dochazka_id] = x.jmeno || '';
+                const inicialy = (x.jmeno || '?').trim().split(/\s+/).map(s => s[0]).slice(0, 2).join('').toUpperCase();
+                const row = document.createElement('div'); row.className = 'visitor-row';
+                row.innerHTML = `<div class="visitor-avatar">${escHtml(inicialy)}</div>
+                                 <div class="visitor-info"><h4>${escHtml(x.jmeno)}</h4><p class="visitor-meta">${escHtml(x.spolecnost || 'Návštěva')} · příchod ${escHtml(x.cas)}</p></div>
+                                 <button class="btn btn-leave" onclick="openDepartureModal(${Number(x.dochazka_id)})">Odcházím</button>`;
+                list.appendChild(row);
+            });
+        } catch(e) { list.innerHTML = `<p style="color:red;">Chyba: ${escHtml(e.message)}</p>`; }
+    }
+
+    function openDepartureModal(dochazkaId) {
+        document.getElementById('departureTargetId').value = dochazkaId;
+        const jmeno = (odchodJmena[dochazkaId] || '').trim();
+        document.getElementById('departureModalMessage').innerText =
+            jmeno ? (jmeno + ' – ' + t('dep.modal.msg')) : t('dep.modal.msg');
+        document.getElementById('departureModal').style.display = 'flex';
+    }
+
+    let fxTimer = null;
+    let fxPoZavreni = null;
+    function ukazOverlay(id, titleId, titleText, sekund, poZavreni) {
+        const overlay = document.getElementById(id);
+        document.getElementById(titleId).innerHTML = escHtml(titleText) + '<span class="plus"></span>';
+        overlay.style.setProperty('--fx-sec', sekund + 's');
+        overlay.style.display = 'flex';
+        overlay.classList.remove('play'); void overlay.offsetWidth; overlay.classList.add('play');
+        fxPoZavreni = poZavreni || null;
+        clearTimeout(fxTimer);
+        fxTimer = setTimeout(() => zavriOverlay(id), sekund * 1000);
+    }
+    function zavriOverlay(id) {
+        clearTimeout(fxTimer);
+        const overlay = document.getElementById(id);
+        overlay.classList.remove('play');
+        overlay.style.display = 'none';
+        const cb = fxPoZavreni; fxPoZavreni = null;
+        if (cb) cb();
+        else switchView('home');
+    }
+    function zavriRozlouceni() { zavriOverlay('thanksOverlay'); }
+    function zavriUvitani()    { zavriOverlay('welcomeOverlay'); }
+
+    function ukazRegOk(jmeno) {
+        const overlay = document.getElementById('regOkOverlay');
+        document.getElementById('regok-title').innerText =
+            jmeno ? t('ov.regok.title').replace(/!$/, '') + ', ' + jmeno.trim().split(' ')[0] + '!' : t('ov.regok.title');
+        overlay.style.setProperty('--fx-sec', '4s');
+        overlay.style.display = 'flex';
+        overlay.classList.remove('play'); void overlay.offsetWidth; overlay.classList.add('play');
+        clearTimeout(fxTimer);
+        fxTimer = setTimeout(zavriRegOk, 4000);
+    }
+    function zavriRegOk() {
+        clearTimeout(fxTimer);
+        const overlay = document.getElementById('regOkOverlay');
+        overlay.classList.remove('play');
+        overlay.style.display = 'none';
+        switchView('arrival-confirm');
+    }
+
+    async function executeDeparture() {
+        const id = document.getElementById('departureTargetId').value;
+        document.getElementById('departureModal').style.display = 'none';
+        const jmeno = (odchodJmena[id] || '').trim();
+
+        ukazOverlay('thanksOverlay', 'thanks-title', jmeno ? t('ov.thanks.hello', { name: jmeno.split(' ')[0] }) : t('ov.thanks.title'), 6);
+        try {
+            await api.zaznamenejOdchod(id);
+        } catch(e) {
+            zavriOverlay('thanksOverlay');
+            showKioskAlert("Odchod se nepodařilo uložit", e.message + "\n\nZkuste to prosím znovu, případně se obraťte na recepci.");
+        }
+    }
+
+
+
+
+
+    let adminStranky = [];
+
+    async function adminPosunStranu(idx, smer) {
+        const a = adminStranky[idx], b = adminStranky[idx + smer];
+        if (!a || !b) return;
+        try {
+            await api.upravPravidlo(a.id, null, b.poradi);
+            await api.upravPravidlo(b.id, null, a.poradi);
+            await nactiSeznamPravidel();
+        } catch(e) { showKioskAlert("Přesun se nepovedl", e.message); }
+    }
+
+
+
+
+
+
+
+    const inputVyhledavani = document.getElementById('search-input');
+    const suggVyhledavani = document.getElementById('search-suggestions');
+
+    inputVyhledavani.addEventListener('input', async (e) => {
+        const text = e.target.value;
+        if(text.length < 2) { suggVyhledavani.style.display = 'none'; return; }
+        try {
+            const res = await api.hledejOsobu(text);
+            if(res && res.length > 0) {
+                suggVyhledavani.innerHTML = '';
+                res.forEach(o => {
+                    const div = document.createElement('div'); div.className = 'suggestion-item';
+                    div.innerHTML = `${escHtml(o.jmeno)}<small>${escHtml(o.spolecnost || o.email || 'registrovaný návštěvník')}</small>`;
+                    div.onclick = () => {
+                        suggVyhledavani.style.display = 'none';
+                        if (o.posledni_stavy === 'Uvnitr') {
+                            showKioskAlert("Už jste přihlášen(a)", "Podle záznamů jste v budově. Pokud odcházíte, použijte prosím tlačítko Odcházím na úvodní obrazovce.");
+                            switchView('home');
+                        } else {
+                            vybranyNavstevnikId = o.id;
+                            document.getElementById('arr-name').innerText = o.jmeno;
+                            document.getElementById('arr-detail').innerText = o.spolecnost || o.email;
+                            switchView('arrival-confirm');
+                        }
+                    };
+                    suggVyhledavani.appendChild(div);
+                });
+                suggVyhledavani.style.display = 'block';
+            } else { suggVyhledavani.style.display = 'none'; }
+        } catch(e) { suggVyhledavani.style.display = 'none'; }
+    });
+
+    function escHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    document.getElementById("clearRegisterBtn").addEventListener("click", () => { vycistiPodpis(); });
+    document.getElementById("clearArrivalBtn").addEventListener("click", () => {
+        vycistiPodpis();
+        document.getElementById('biometric-score').innerHTML = t('arr.waiting');
+    });
+
+    function diagSet(id, stav, text) {
+        const row = document.getElementById(id);
+        if (!row) return;
+        row.className = 'diag-row ' + stav;
+        row.querySelector('em').innerText = text;
+    }
+
+    async function spustDiagnostiku() {
+
+        diagSet('diag-api', 'wait', 'testuji…'); diagSet('diag-db', 'wait', '…');
+        try {
+            const h = await secureFetch(`${API_URL}/api/health`);
+            diagSet('diag-api', 'ok', 'běží');
+            diagSet('diag-db', h.db ? 'ok' : 'fail', h.db ? 'připojena' : (h.dbError || 'nedostupná'));
+        } catch (e) {
+            diagSet('diag-api', 'fail', e.message.includes('autorizace') ? 'špatný API klíč' : 'server neběží');
+            diagSet('diag-db', 'fail', 'nelze ověřit');
+        }
+
+        const envOk = !!API_KEY, licOk = !!(WACOM_LICENCE_KEY && WACOM_LICENCE_SECRET);
+        const secretPoskozeny = licOk && (WACOM_LICENCE_SECRET.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(WACOM_LICENCE_SECRET));
+        diagSet('diag-env', envOk ? (licOk ? (secretPoskozeny ? 'fail' : 'ok') : 'wait') : 'fail',
+                !envOk ? '.env nenačten'
+                : !licOk ? 'chybí Wacom licence (FSS se přeskočí)'
+                : secretPoskozeny ? `licence je poškozená – secret má ${WACOM_LICENCE_SECRET.length} znaků, zkopírujte ho znovu celý`
+                : `kompletní · secret ${WACOM_LICENCE_SECRET.length} znaků`);
+
+        if (wacom.connected) diagSet('diag-tablet', 'ok', `${wacom.productName} · ${wacom.maxX}×${wacom.maxY}`);
+        else diagSet('diag-tablet', 'fail', 'nepřipojen');
+
+        diagPenCounter = 0; diagPenActive = true;
+        diagSet('diag-pero', wacom.connected ? 'wait' : 'fail', wacom.connected ? 'pište do zkušební plochy níže…' : 'tablet nepřipojen');
+        if (wacom.connected) {
+            const iv = setInterval(() => {
+                if (!diagPenActive) { clearInterval(iv); return; }
+                const el = document.getElementById('diag-pero-count');
+                if (el) el.innerText = diagPenCounter + ' bodů';
+                if (diagPenCounter > 0) diagSet('diag-pero', 'ok', diagPenCounter + ' bodů');
+            }, 400);
+            setTimeout(() => { diagPenActive = false; }, 30000);
+        }
+        diagSet('diag-fss', 'wait', 'podepište se níže a klepněte na Vygenerovat FSS');
+    }
+
+    let posledniDiagFss = null;
+    async function diagTestFSS() {
+        diagSet('diag-fss', 'wait', 'generuji…');
+        const btn = document.getElementById('diagFssDownloadBtn');
+        posledniDiagFss = null;
+        if (btn) btn.disabled = true;
+
+        if (!wacom.connected) { diagSet('diag-fss', 'fail', 'tablet nepřipojen'); return; }
+        if (!podpisSession || podpisSession.cid !== 'canvasDiag') {
+            diagSet('diag-fss', 'fail', 'otevřete záložku Diagnostika a podepište se do zkušební plochy');
+            return;
+        }
+        const maTahy = podpisSession.strokes.some(s => s.length > 1);
+        if (!maTahy) {
+            diagSet('diag-fss', 'fail', hasDrawnOnCanvas
+                ? 'podpis je jen z prstu/myši – FSS vyžaduje pero na tabletu'
+                : 'nejdřív se podepište perem do zkušební plochy');
+            return;
+        }
+
+        const fss = await vytvorFSS('Diagnostika', 'Testovací podpis – neukládá se');
+        if (fss) {
+            posledniDiagFss = fss;
+            if (btn) btn.disabled = false;
+            const velikostB = Math.floor(fss.length * 3 / 4);
+            diagSet('diag-fss', 'ok', `FSS OK (~${velikostB} B) – lze stáhnout`);
+        } else {
+            diagSet('diag-fss', 'fail', !WACOM_LICENCE_KEY ? 'chybí licence v .env'
+                : (posledniFssChyba ? 'selhalo: ' + posledniFssChyba : 'generování selhalo'));
+        }
+    }
+
+    function stahniDiagFss() {
+        if (!posledniDiagFss) { showKioskAlert('Nejdřív FSS', 'Nejdřív vygenerujte FSS ze zkušebního podpisu.'); return; }
+        try {
+            const bin = atob(posledniDiagFss);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            const blob = new Blob([bytes], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `zkusebni_podpis_${new Date().toISOString().replace(/[:.]/g, '-')}.fss`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (e) { showKioskAlert('Stažení se nepovedlo', e.message); }
+    }
+
+
+    window.addEventListener('beforeunload', () => {
+        try {
+            const stu = wacom.stu;
+            if (!stu) return;
+            try { stu.stopEventHandler(); } catch (e) {}
+            try { stu.setInkingMode(wacom.sdk.InkingMode.Off); } catch (e) {}
+            try { stu.setClearScreen(); } catch (e) {}
+            try { stu.disconnect(); } catch (e) {}
+        } catch (e) {}
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+        switchView('home');
+
+        refreshWacomUI();
+
+        let startPokus = 0;
+        const startPripojeni = () => {
+            if (wacom.connected) return;
+            startPokus++;
+            zapnoutWacom(false)
+                .then(ok => {
+                    if (ok) {
+                        console.log('Tablet připojen při startu (pokus ' + startPokus + ').');
+                        padRezim('logo');
+                        try { api.stavKiosku({ tablet: true }); } catch (err) {}
+                        return;
+                    }
+                    if (startPokus < 6) {
+                        const pauza = Math.min(1200 + startPokus * 1000, 5000);
+                        console.warn('Tablet po startu zatím neodpovídá (pokus ' + startPokus + '), zkusím to znovu za ' + Math.round(pauza / 1000) + ' s.');
+                        setTimeout(startPripojeni, pauza);
+                    }
+                })
+                .catch(() => { if (startPokus < 6) setTimeout(startPripojeni, 2500); });
+        };
+        setTimeout(startPripojeni, 700);
+
+        setInterval(async () => {
+            if (wacom.connected || wacomBusy) return;
+            let jeVUsb = false;
+            try { jeVUsb = (await navigator.hid.getDevices()).some(d => d.vendorId === 0x056A); } catch (e) {}
+            if (!jeVUsb) return;
+            const ok = await zapnoutWacom(false).catch(() => false);
+            if (ok) {
+                console.log('Tablet sám naskočil (hlídač spojení).');
+                padRezim(podpisSession ? 'podpis' : 'logo');
+                try { api.stavKiosku({ tablet: true }); } catch (err) {}
+            }
+        }, 15000);
+
+        try {
+            let hidGen = 0;
+            let hidReconnectTimer = null;
+
+            navigator.hid.addEventListener('disconnect', (e) => {
+                if (!e.device || e.device.vendorId !== 0x056A) return;
+                hidGen++;                      
+                clearTimeout(hidReconnectTimer);
+                wacomBusy = false;            
+                console.warn('Wacom tablet odpojen z USB – uklízím spojení.');
+                stuUloha(async () => {
+                    await tvrdyReset(e.device);
+                    refreshWacomUI();
+                });
+                try { api.stavKiosku({ tablet: false }); } catch (err) {}
+                setTimeout(() => { try { api.stavKiosku({ tablet: false }); } catch (err) {} }, 1500);
+            });
+
+            navigator.hid.addEventListener('connect', (e) => {
+                if (!e.device || e.device.vendorId !== 0x056A) return;
+                const mojeGen = ++hidGen;
+                clearTimeout(hidReconnectTimer);
+                wacomBusy = false;              
+                console.log('Wacom tablet připojen do USB, navazuji spojení…');
+                let pokus = 0;
+                const zkusPripojit = () => {
+                    if (mojeGen !== hidGen) return;
+                    pokus++;
+                    stuUloha(async () => {
+                        if (mojeGen !== hidGen) return;
+                        await tvrdyReset(null);  
+                        refreshWacomUI();
+                    })
+                    .then(() => {
+                        if (mojeGen !== hidGen) return false;
+                        return zapnoutWacom(false);
+                    })
+                    .then(ok => {
+                        if (mojeGen !== hidGen) return;
+                        if (ok) {
+                            console.log('Tablet připojen (pokus ' + pokus + '), překresluji displej.');
+                            padRezim(podpisSession ? 'podpis' : 'logo');
+                            try { api.stavKiosku({ tablet: true }); } catch (err) {}
+                            return;
+                        }
+                        if (pokus < 10) {
+                            const pauza = Math.min(1500 + pokus * 800, 6000);
+                            console.warn('Tablet zatím neodpovídá (pokus ' + pokus + '), zkusím to znovu za ' + Math.round(pauza / 1000) + ' s.');
+                            hidReconnectTimer = setTimeout(zkusPripojit, pauza);
+                        } else {
+                            console.warn('Tablet se nepodařilo připojit ani po ' + pokus + ' pokusech. Použijte tlačítko „Připojit tablet".');
+                            try { api.stavKiosku({ tablet: false }); } catch (err) {}
+                        }
+                    })
+                    .catch(() => {
+                        if (mojeGen !== hidGen) return;
+                        if (pokus < 10) hidReconnectTimer = setTimeout(zkusPripojit, 2500);
+                    });
+                };
+                hidReconnectTimer = setTimeout(zkusPripojit, 1800);
+            });
+        } catch (e) { console.warn('WebHID connect/disconnect události nejsou dostupné:', e); }
+    });
+</script>
+</body>
+</html>

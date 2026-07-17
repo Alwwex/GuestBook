@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Správa návštěv · GuestBook</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #00205B;
+            --red: #EE2737;
+            --cyan: #67D2DF;
+            --ink: #454142;
+            --paper: #F4F6F9;
+            --line: #E3E8EF;
+            --ok: #1f9d55;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 17px;
+        }
+
+        @media (max-width: 1100px) {
+            html {
+                font-size: 18px;
+            }
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Funnel Display', 'Segoe UI', sans-serif;
+            background: var(--paper);
+            color: var(--ink);
+            font-size: 1rem;
+        }
+
+        header {
+            background: #fff;
+            border-bottom: 1px solid var(--line);
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        header b {
+            color: var(--blue);
+            font-size: 19px;
+            letter-spacing: .5px;
+        }
+
+        header .plus {
+            display: inline-block;
+            width: 11px;
+            height: 11px;
+            position: relative;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
+        header .plus::before {
+            content: "";
+            position: absolute;
+            left: 46%;
+            top: 0;
+            width: 8%;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--red) 0 38%, transparent 38% 62%, var(--red) 62% 100%);
+        }
+
+        header .plus::after {
+            content: "";
+            position: absolute;
+            top: 46%;
+            left: 0;
+            height: 8%;
+            width: 100%;
+            background: linear-gradient(to right, var(--red) 0 38%, transparent 38% 62%, var(--red) 62% 100%);
+        }
+
+        header button {
+            background: none;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-family: inherit;
+            font-size: 13.5px;
+            color: var(--ink);
+            cursor: pointer;
+        }
+
+        nav {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            overflow-x: auto;
+            background: #fff;
+            border-bottom: 1px solid var(--line);
+        }
+
+        nav button {
+            flex-shrink: 0;
+            padding: 9px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: var(--paper);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ink);
+            cursor: pointer;
+            transition: border-color .12s, color .12s, background .12s;
+        }
+
+        nav button:not(.active):hover {
+            border-color: var(--blue);
+            color: var(--blue);
+        }
+
+        nav button.active {
+            background: var(--blue);
+            color: #fff;
+            border-color: var(--blue);
+        }
+
+        main {
+            padding: 16px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        section {
+            display: none;
+        }
+
+        section.active {
+            display: block;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .stat {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat b {
+            display: block;
+            font-size: 30px;
+            color: var(--blue);
+        }
+
+        .stat span {
+            font-size: 12.5px;
+            color: #6b7482;
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .card h3 {
+            margin: 0 0 10px;
+            color: var(--blue);
+            font-size: 16px;
+        }
+
+        .diag {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .diag i {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #c3cad4;
+            flex-shrink: 0;
+        }
+
+        .diag.ok i {
+            background: var(--ok);
+        }
+
+        .diag.bad i {
+            background: var(--red);
+        }
+
+        .diag em {
+            margin-left: auto;
+            font-style: normal;
+            color: #6b7482;
+            font-size: 13px;
+            text-align: right;
+        }
+
+        .diag.ok em {
+            color: #0e6b39;
+        }
+
+        .diag.bad em {
+            color: #a11624;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13.5px;
+            background: #fff;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--line);
+            padding: 8px 9px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            background: var(--blue);
+            color: #fff;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .tbl-wrap {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+        }
+
+        img.sig {
+            height: 34px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+        }
+
+        input[type=text],
+        input[type=search],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1.5px solid var(--line);
+            border-radius: 9px;
+            font-family: inherit;
+            font-size: 15px;
+        }
+
+        button.b {
+            padding: 11px 18px;
+            border: none;
+            border-radius: 9px;
+            font-family: inherit;
+            font-size: 14.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: filter .12s, transform .12s;
+        }
+
+        button.b:hover {
+            filter: brightness(1.07);
+        }
+
+        button.b:active {
+            transform: translateY(1px);
+        }
+
+        .b-blue {
+            background: var(--blue);
+            color: #fff;
+        }
+
+        .b-red {
+            background: var(--red);
+            color: #fff;
+        }
+
+        .b-out {
+            background: #fff;
+            border: 1.5px solid var(--line);
+            color: var(--ink);
+        }
+
+        .b-green {
+            background: var(--ok);
+            color: #fff;
+        }
+
+        .page-item {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+        }
+
+        .page-item .nahled {
+            width: 74px;
+            height: 52px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: var(--paper);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 10px;
+            color: #8a929e;
+        }
+
+        .page-item .nahled img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .page-item .txt {
+            flex: 1;
+            min-width: 0;
+            font-size: 13.5px;
+            color: #6b7482;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .page-item .akce {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .page-item .akce button {
+            padding: 8px 12px;
+            font-size: 12.5px;
+        }
+
+        #toast {
+            position: fixed;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--blue);
+            color: #fff;
+            padding: 12px 22px;
+            border-radius: 10px;
+            font-size: 14px;
+            display: none;
+            z-index: 50;
+            box-shadow: 0 10px 30px rgba(0, 32, 91, .25);
+        }
+
+        dialog {
+            border: none;
+            border-radius: 14px;
+            padding: 0;
+            width: min(94vw, 560px);
+            box-shadow: 0 24px 60px rgba(0, 32, 91, .25);
+        }
+
+        dialog::backdrop {
+            background: rgba(0, 32, 91, .5);
+        }
+
+        dialog .inner {
+            padding: 22px;
+        }
+
+        dialog h3 {
+            margin: 0 0 10px;
+            color: var(--blue);
+        }
+
+        .radek-akce {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        #dlg-nahled { width: min(96vw, 1000px); }
+        #dlg-nahled .inner { display: flex; flex-direction: column; height: min(88vh, 780px); }
+        .nh-stage { flex: 1; min-height: 0; overflow-y: auto; background: #fff; border: 1px solid var(--line);
+            border-radius: 12px; padding: 30px 40px; }
+        .nh-stage.je-obrazek { padding: 14px; }
+        .nh-stage img { max-width: none !important; width: 100%; height: auto; display: block; border-radius: 8px;
+            box-shadow: 0 6px 24px rgba(0, 32, 91, .12); }
+        .nh-stage h1, .nh-stage h2, .nh-stage h3 { color: var(--blue); }
+        .nh-stage p { font-size: 16.5px; line-height: 1.7; }
+        .nh-listy { display: flex; align-items: center; gap: 14px; margin-top: 12px; flex-shrink: 0; }
+        .nh-prubeh { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .nh-prubeh small { color: #6b7482; font-weight: 600; letter-spacing: .3px; }
+        .nh-bar { height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; }
+        .nh-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--blue), var(--cyan));
+            border-radius: 99px; transition: width .25s ease; }
+
+        @media (max-width:640px) {
+
+            th,
+            td {
+                font-size: 12px;
+                padding: 6px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <b id="gb-brand"><span id="gb-brand-text">Správa návštěv</span></b>
+        <button onclick="odhlasit()">Odhlásit</button>
+    </header>
+    <nav>
+        <button class="active" data-s="prehled" onclick="prepni(this)">Přehled</button>
+        <button data-s="budova" onclick="prepni(this)">V budově</button>
+        <button data-s="osoby" onclick="prepni(this)">Osoby</button>
+        <button data-s="dochazka" onclick="prepni(this)">Docházka</button>
+        <button data-s="pokyny" onclick="prepni(this)">Pokyny</button>
+        <button data-s="databaze" onclick="prepni(this)">Databáze</button>
+    </nav>
+    <main>
+        <section id="s-prehled" class="active">
+            <div class="stats">
+                <div class="stat"><b id="st-uvnitr">–</b><span>Právě v budově</span></div>
+                <div class="stat"><b id="st-osob">–</b><span>Registrovaných osob</span></div>
+                <div class="stat"><b id="st-fss">–</b><span>Uložených FSS</span></div>
+            </div>
+            <div class="card">
+                <h3>Stav systému</h3>
+                <div class="diag" id="d-server"><i></i>Server<em>–</em></div>
+                <div class="diag" id="d-db"><i></i>Databáze<em>–</em></div>
+                <div class="diag" id="d-kiosek"><i></i>Kiosek<em>–</em></div>
+                <div class="diag" id="d-tablet"><i></i>Podpisový tablet<em>–</em></div>
+                <div class="diag" id="d-fss"><i></i>FSS šifrování podpisů<em>–</em></div>
+                <div class="radek-akce">
+                    <button class="b b-blue" onclick="nactiPrehled()">Obnovit</button>
+                    <button class="b b-green" onclick="stahniZalohu()">Záloha databáze (SQL)</button>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Adresa správy</h3>
+                <p style="margin:0 0 10px; font-size:13.5px; color:#6b7482;">Adresa tohoto panelu se náhodně mění (např.
+                    <code>/sprava125</code> → <code>/sprava278</code>) a každá nová adresa se posílá na Discord.
+                    Nastavení se pamatuje i po restartu serveru.</p>
+                <div class="diag"><i></i>Aktuální adresa<em id="rot-adresa">–</em></div>
+                <div class="diag"><i></i>Rotace<em id="rot-stav">–</em></div>
+            </div>
+            <div class="card">
+                <h3>Aplikace GuestBook</h3>
+                <p style="margin:0 0 10px; font-size:13.5px; color:#6b7482;">Povely pro aplikaci běžící na počítači s
+                    kioskem. Provedou se do pár vteřin.</p>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="b b-blue" onclick="guestbookAkce('restart', 'Restartovat aplikaci GuestBook?')"><svg
+                            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+                            style="vertical-align:-2px; margin-right:6px;">
+                            <path d="M21 12a9 9 0 1 1-2.6-6.4" />
+                            <path d="M21 3v6h-6" />
+                        </svg>Restartovat GuestBook</button>
+                    <button class="b b-green" onclick="guestbookAkce('nastaveni')"><svg width="14" height="14"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            style="vertical-align:-2px; margin-right:6px;">
+                            <circle cx="12" cy="12" r="3" />
+                            <path
+                                d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06A2 2 0 1 1 7.07 4.2l.06.06a1.7 1.7 0 0 0 1.87.34 1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87 1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1Z" />
+                        </svg>Otevřít Nastavení</button>
+                    <button class="b" style="background:#1c2733; color:#fff;" onclick="otevriWebTerminal()"><svg
+                            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+                            style="vertical-align:-2px; margin-right:6px;">
+                            <path d="M5 7l5 5-5 5" />
+                            <path d="M12 19h7" />
+                        </svg>Otevřít terminál</button>
+                </div>
+                <div style="margin-top:8px; font-size:12.5px; color:#6b7482;" id="gb-akce-stav"></div>
+
+                <div class="diag" id="rot-odpocet-radek"><i></i>Do další změny<em id="rot-odpocet">–</em></div>
+                <div style="margin:12px 0 6px;">
+                    <label
+                        style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">Jak
+                        často měnit adresu</label>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                        <select id="rot-interval" onchange="rotIntervalUpraven=true"
+                            style="flex:1; min-width:150px; padding:11px; border:1.5px solid var(--line); border-radius:9px; font-family:inherit; font-size:15px; background:#fff;">
+                            <option value="30">30 sekund</option>
+                            <option value="60">1 minuta</option>
+                            <option value="120">2 minuty</option>
+                            <option value="300">5 minut</option>
+                            <option value="600">10 minut</option>
+                            <option value="1800">30 minut</option>
+                            <option value="3600">1 hodina</option>
+                        </select>
+                        <button class="b b-blue" onclick="ulozInterval()">Uložit interval</button>
+                    </div>
+                </div>
+                <div class="radek-akce">
+                    <button class="b" id="rot-btn" onclick="prepniRotaci()">–</button>
+                </div>
+                <p style="margin:8px 0 0; font-size:12.5px; color:#a11624;" id="rot-poznamka"></p>
+            </div>
+        </section>
+
+        <section id="s-budova">
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Jméno</th>
+                            <th>Společnost</th>
+                            <th>Telefon</th>
+                            <th>Příchod</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="t-budova"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="s-osoby">
+            <div class="card" style="display:flex; gap:10px;">
+                <input type="search" id="hledat-osobu" placeholder="Hledat podle jména…" oninput="filtrujOsoby()">
+            </div>
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Jméno</th>
+                            <th>E-mail</th>
+                            <th>Telefon</th>
+                            <th>Společnost</th>
+                            <th>Podpis</th>
+                            <th>FSS</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="t-osoby"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="s-dochazka">
+            <div class="radek-akce" style="margin-bottom:10px;"><button class="b b-green" onclick="stahniCsv()">Stáhnout
+                    CSV</button></div>
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Návštěvník</th>
+                            <th>Stav</th>
+                            <th>Příchod</th>
+                            <th>Odchod</th>
+                            <th>Podpis</th>
+                            <th>FSS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="t-dochazka"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="s-pokyny">
+            <div class="card">
+                <h3>Nová textová strana</h3>
+                <textarea id="novy-text" rows="3"
+                    placeholder="Např. Po areálu se pohybujte pouze v doprovodu…"></textarea>
+                <div class="radek-akce"><button class="b b-blue" onclick="pridejStranu()">Přidat stranu</button></div>
+            </div>
+            <div class="card">
+                <h3>Import PDF</h3>
+                <p style="margin:0 0 10px; font-size:13.5px; color:#6b7482;">Dokument se rozdělí na strany a přidá na
+                    konec. Jde nahrát i víc dokumentů po sobě.</p>
+                <label class="b b-blue" style="display:inline-block;">Vybrat PDF<input type="file" id="pdf-vstup"
+                        accept="application/pdf" style="display:none;" onchange="importujPdf(this)"></label>
+                <span id="pdf-stav" style="margin-left:10px; color:var(--blue); font-weight:600;"></span>
+            </div>
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h3 style="margin:0;">Strany, jak je uvidí návštěvník</h3>
+                    <div style="display:flex; gap:8px;">
+                        <button class="b b-blue" onclick="otevriNahled(0)">Náhled kiosku</button>
+                        <button class="b b-out" style="border-color:var(--red); color:var(--red);"
+                            onclick="smazVse()">Smazat vše</button>
+                    </div>
+                </div>
+                <div id="seznam-stran"></div>
+            </div>
+        </section>
+        <section id="s-databaze">
+            <div class="card">
+                <h3>Databáze</h3>
+                <p style="margin:0 0 10px; font-size:13.5px; color:#6b7482;">Přímý pohled na data. Dvojklikem na buňku
+                    ji upravíte, křížkem smažete řádek – mazání je nevratné. Dlouhá data (podpisy) se ukazují zkráceně.
+                </p>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
+                    <span id="db-tab-seznam" style="display:flex; gap:6px; flex-wrap:wrap;"></span>
+                    <span style="flex:1;"></span>
+                    <input type="text" id="db-hledat" placeholder="Hledat…"
+                        style="padding:9px 12px; border:1px solid var(--line); border-radius:8px; font-family:inherit; font-size:13.5px;"
+                        onkeydown="if(event.key==='Enter')dbNacti(0)">
+                    <button class="b b-blue" onclick="dbNacti(0)">Hledat</button>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;">
+                    <b id="db-titulek" style="color:var(--blue);"></b>
+                    <span id="db-pocet" style="font-size:12.5px; color:#6b7482;"></span>
+                    <span style="flex:1;"></span>
+                    <button class="b" id="db-zpet" onclick="dbStrana(-1)" disabled>‹</button>
+                    <span id="db-strankovani" style="font-size:12.5px; color:#6b7482;"></span>
+                    <button class="b" id="db-vpred" onclick="dbStrana(1)" disabled>›</button>
+                </div>
+                <div style="overflow:auto; max-height:64vh; border:1px solid var(--line); border-radius:10px;">
+                    <table id="db-grid" style="min-width:600px;"></table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <dialog id="dlg-uprava">
+        <div class="inner">
+            <h3>Úprava strany</h3>
+            <input type="hidden" id="up-id">
+            <textarea id="up-text" rows="7"></textarea>
+            <div class="radek-akce"><button class="b b-blue" onclick="ulozUpravu()">Uložit</button><button
+                    class="b b-out" onclick="document.getElementById('dlg-uprava').close()">Zrušit</button></div>
+        </div>
+    </dialog>
+
+    <dialog id="dlg-nahled">
+        <div class="inner">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-shrink:0;">
+                <h3 style="margin:0;">Bezpečnostní pokyny – takhle je uvidí návštěvník</h3>
+                <button class="b b-out" onclick="document.getElementById('dlg-nahled').close()">Zavřít</button>
+            </div>
+            <div class="nh-stage" id="nh-stage"></div>
+            <div class="nh-listy">
+                <button class="b" id="nh-zpet" onclick="nahledKrok(-1)">‹ Předchozí</button>
+                <div class="nh-prubeh">
+                    <small id="nh-pocitadlo"></small>
+                    <div class="nh-bar"><i id="nh-fill"></i></div>
+                </div>
+                <button class="b b-blue" id="nh-dal" onclick="nahledKrok(1)">Další ›</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="dlg-potvrzeni">
+        <div class="inner">
+            <h3 id="pt-titulek">Opravdu?</h3>
+            <p id="pt-text" style="color:#6b7482;"></p>
+            <div class="radek-akce"><button class="b b-red" id="pt-ano">Ano</button><button class="b b-out"
+                    onclick="document.getElementById('dlg-potvrzeni').close()">Zpět</button></div>
+        </div>
+    </dialog>
+
+    <div id="toast"></div>
+
+    <script>
+        const TOKEN = sessionStorage.getItem('t') || new URLSearchParams(location.search).get('t') || '';
+        if (new URLSearchParams(location.search).get('t')) {
+            sessionStorage.setItem('t', TOKEN);
+            history.replaceState(null, '', location.pathname);
+        }
+        if (!TOKEN) location.href = location.pathname.replace(/\/panel$/, '');
+
+        async function volej(cesta, options = {}) {
+            const r = await fetch(cesta, { ...options, headers: { 'Content-Type': 'application/json', 'X-Admin-Token': TOKEN, ...(options.headers || {}) } });
+            if (r.status === 401) { sessionStorage.removeItem('t'); location.href = location.pathname.replace(/\/panel$/, ''); throw new Error('Odhlášeno'); }
+            const d = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(d.error || 'Chyba serveru');
+            return d;
+        }
+        function toast(text) {
+            const t = document.getElementById('toast');
+            t.innerText = text; t.style.display = 'block';
+            clearTimeout(t._tm); t._tm = setTimeout(() => t.style.display = 'none', 2600);
+        }
+        function esc(s) { const d = document.createElement('div'); d.innerText = s == null ? '' : String(s); return d.innerHTML; }
+        function potvrd(titulek, text, cb) {
+            document.getElementById('pt-titulek').innerText = titulek;
+            document.getElementById('pt-text').innerText = text;
+            const btn = document.getElementById('pt-ano');
+            btn.onclick = () => { document.getElementById('dlg-potvrzeni').close(); cb(); };
+            document.getElementById('dlg-potvrzeni').showModal();
+        }
+
+        function prepni(btn) {
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.querySelectorAll('main section').forEach(s => s.classList.remove('active'));
+            document.getElementById('s-' + btn.dataset.s).classList.add('active');
+            ({ prehled: nactiPrehled, budova: nactiBudovu, osoby: nactiOsoby, dochazka: nactiDochazku, pokyny: nactiStrany, databaze: dbTabulky })[btn.dataset.s]();
+        }
+        function odhlasit() { sessionStorage.removeItem('t'); location.href = location.pathname.replace(/\/panel$/, ''); }
+
+        async function nactiPrehled() {
+            try {
+                const h = await volej('/api/health');
+                const nastav = (id, ok, text) => {
+                    const el = document.getElementById(id);
+                    el.classList.remove('ok', 'bad'); el.classList.add(ok ? 'ok' : 'bad');
+                    el.querySelector('em').innerText = text;
+                };
+                nastav('d-server', true, 'běží');
+                nastav('d-db', h.db, h.db ? 'připojena' : (h.dbChyba || 'nedostupná'));
+                nastav('d-fss', h.fssSifrovani, h.fssSifrovani ? 'aktivní (AES-256-GCM)' : 'chybí platný klíč');
+                if (h.kiosek && h.kiosek.cas) {
+                    const stariSek = Math.round((Date.now() - h.kiosek.cas) / 1000);
+                    const bezi = stariSek < 75;
+                    nastav('d-kiosek', bezi, bezi ? 'běží' : `nehlásí se (naposledy před ${stariSek < 120 ? stariSek + ' s' : Math.round(stariSek / 60) + ' min'})`);
+                    if (bezi) nastav('d-tablet', !!h.kiosek.tablet, h.kiosek.tablet ? 'připojen' : 'odpojen');
+                    else nastav('d-tablet', false, 'neznámý stav (kiosek se nehlásí)');
+                } else if (h.kiosek && h.kiosek.vypnuto) {
+                    nastav('d-kiosek', false, 'vypnutý');
+                    nastav('d-tablet', false, 'neznámý stav (kiosek je vypnutý)');
+                } else {
+                    nastav('d-kiosek', false, 'zatím se nehlásí');
+                    nastav('d-tablet', false, 'neznámý stav');
+                }
+                if (h.statistiky) {
+                    document.getElementById('st-uvnitr').innerText = h.statistiky.uvnitr;
+                    document.getElementById('st-osob').innerText = h.statistiky.cleni;
+                    document.getElementById('st-fss').innerText = h.statistiky.fssPocet;
+                }
+                nactiRotaci();
+            } catch (e) { toast(e.message); }
+        }
+
+        let rotOdpocetTimer = null;
+        let rotOdpocetDo = 0;       
+        let rotIntervalUpraven = false;
+
+        function formatCas(ms) {
+            if (ms == null) return '–';
+            const s = Math.max(0, Math.round(ms / 1000));
+            const m = Math.floor(s / 60), zb = s % 60;
+            if (m > 0) return `${m} min ${String(zb).padStart(2, '0')} s`;
+            return `${zb} s`;
+        }
+
+        function spustOdpocet() {
+            clearInterval(rotOdpocetTimer);
+            rotOdpocetTimer = setInterval(() => {
+                const el = document.getElementById('rot-odpocet');
+                if (!el) return;
+                if (!rotOdpocetDo) { el.innerText = '–'; return; }
+                const zbyva = rotOdpocetDo - Date.now();
+                if (zbyva <= 0) {
+                    el.innerText = 'mění se…';
+                    clearInterval(rotOdpocetTimer);
+                    setTimeout(nactiRotaci, 900);
+                } else {
+                    el.innerText = formatCas(zbyva);
+                }
+            }, 1000);
+        }
+
+        async function nactiRotaci() {
+            try {
+                const s = await volej('/api/admin/rotace-stav');
+                document.getElementById('rot-adresa').innerText = s.aktualniAdminPath;
+                document.getElementById('rot-stav').innerText = s.rotaceZapnuta
+                    ? `zapnutá (každých ${formatCas(s.intervalMs)})` : 'vypnutá';
+
+                const btn = document.getElementById('rot-btn');
+                btn.innerText = s.rotaceZapnuta ? 'Zastavit náhodné generování adresy' : 'Znovu zapnout náhodné generování';
+                btn.className = 'b ' + (s.rotaceZapnuta ? 'b-red' : 'b-green');
+
+                const sel = document.getElementById('rot-interval');
+                if (sel && !rotIntervalUpraven) {
+                    const val = String(s.intervalSekund);
+                    if ([...sel.options].some(o => o.value === val)) sel.value = val;
+                }
+
+                document.getElementById('rot-odpocet-radek').style.display = s.rotaceZapnuta ? '' : 'none';
+                if (s.rotaceZapnuta && s.zbyvaMs != null) {
+                    rotOdpocetDo = Date.now() + s.zbyvaMs;
+                    spustOdpocet();
+                } else {
+                    rotOdpocetDo = 0;
+                    clearInterval(rotOdpocetTimer);
+                }
+
+                document.getElementById('rot-poznamka').innerText = s.rotaceZapnuta
+                    ? ''
+                    : 'Rotace je vypnutá – adresa se nemění. Uložte si ji, jinak se k panelu dostanete jen přes poslední adresu na Discordu.';
+            } catch (e) {}
+        }
+
+        async function ulozInterval() {
+            const sel = document.getElementById('rot-interval');
+            const sek = Number(sel.value);
+            try {
+                const r = await volej('/api/admin/rotace-prepni', { method: 'POST', body: JSON.stringify({ intervalSekund: sek }) });
+                rotIntervalUpraven = false;
+                toast('Interval uložen: ' + formatCas(r.intervalMs) + '.');
+                nactiRotaci();
+            } catch (e) { toast(e.message); }
+        }
+
+        async function prepniRotaci() {
+            try {
+                const s = await volej('/api/admin/rotace-stav');
+                const zapnout = !s.rotaceZapnuta;
+                const akce = async () => {
+                    const r = await volej('/api/admin/rotace-prepni', { method: 'POST', body: JSON.stringify({ zapnuto: zapnout }) });
+                    toast(r.rotaceZapnuta ? 'Rotace adresy zapnuta.' : 'Rotace adresy zastavena.');
+                    nactiRotaci();
+                };
+                if (!zapnout) {
+                    potvrd('Zastavit rotaci adresy?', 'Adresa správy se přestane náhodně měnit a zůstane na ' + s.aktualniAdminPath + '. Poznamenejte si ji.', akce);
+                } else { akce(); }
+            } catch (e) { toast(e.message); }
+        }
+
+        async function nactiBudovu() {
+            try {
+                const v = await volej('/api/nacti-aktivni');
+                document.getElementById('t-budova').innerHTML = v.map(x =>
+                    `<tr><td><b>${esc(x.jmeno)}</b></td><td>${esc(x.spolecnost || '–')}</td><td>${esc(x.telefon || '–')}</td><td>${esc(x.cas)}</td>
+            <td><button class="b b-red" style="padding:7px 12px; font-size:12.5px;" onclick="odhlasOsobu(${Number(x.dochazka_id)}, '${esc(x.jmeno)}')">Odhlásit</button></td></tr>`).join('')
+                    || '<tr><td colspan="5" style="text-align:center; color:#8a929e;">Nikdo tu teď není.</td></tr>';
+            } catch (e) { toast(e.message); }
+        }
+        function odhlasOsobu(id, jmeno) {
+            potvrd('Odhlásit z budovy?', jmeno + ' bude označen(a) jako odešlý.', async () => {
+                try { await volej('/api/zaznamenej-odchod', { method: 'POST', body: JSON.stringify({ dochazkaId: id }) }); toast('Odhlášeno.'); nactiBudovu(); }
+                catch (e) { toast(e.message); }
+            });
+        }
+
+        let vsechnyOsoby = [];
+        async function nactiOsoby() {
+            try {
+                vsechnyOsoby = await volej('/api/nacti-vsechny-cleny');
+                vykresliOsoby(vsechnyOsoby);
+            } catch (e) { toast(e.message); }
+        }
+        function vykresliOsoby(v) {
+            document.getElementById('t-osoby').innerHTML = v.map(o =>
+                `<tr><td>${o.id}</td><td><b>${esc(o.jmeno)}</b></td><td>${esc(o.email)}</td><td>${esc(o.telefon || '–')}</td><td>${esc(o.spolecnost || '–')}</td>
+        <td>${o.podpis_base64 ? `<img class="sig" src="${o.podpis_base64}">` : '–'}</td>
+        <td>${o.ma_fss || o.podpis_base64 ? `<button class="b" style="padding:6px 11px; font-size:12px;" onclick="ukazPodpis('navstevnik', ${o.id})">Podpis${o.ma_fss ? ' + FSS' : ''}</button>` : '–'}</td>
+        <td><button class="b b-red" style="padding:7px 12px; font-size:12.5px;" onclick="smazOsobu(${o.id}, '${esc(o.jmeno)}')">Smazat</button></td></tr>`).join('')
+                || '<tr><td colspan="8" style="text-align:center; color:#8a929e;">Žádné osoby.</td></tr>';
+        }
+        function filtrujOsoby() {
+            const q = document.getElementById('hledat-osobu').value.trim().toLowerCase();
+            vykresliOsoby(!q ? vsechnyOsoby : vsechnyOsoby.filter(o => (o.jmeno || '').toLowerCase().includes(q)));
+        }
+        function smazOsobu(id, jmeno) {
+            potvrd('Smazat osobu?', jmeno + ' a celá jeho/její docházka i podpisy budou trvale odstraněny.', async () => {
+                try { await volej('/api/smaz-osobu', { method: 'POST', body: JSON.stringify({ id }) }); toast('Smazáno.'); nactiOsoby(); }
+                catch (e) { toast(e.message); }
+            });
+        }
+
+        async function nactiDochazku() {
+            try {
+                const v = await volej('/api/nacti-dochazku');
+                document.getElementById('t-dochazka').innerHTML = v.map(d =>
+                    `<tr><td>${d.id}</td><td><b>${esc(d.jmeno)}</b></td><td>${esc(d.stav)}</td><td>${esc(String(d.cas_prichodu))}</td><td>${d.cas_odchodu ? esc(String(d.cas_odchodu)) : '–'}</td>
+            <td>${d.podpis_vstup_base64 ? '<span style="color:var(--ok);">uložen</span>' : '–'}</td>
+            <td>${d.ma_fss || d.podpis_vstup_base64 ? `<button class="b" style="padding:6px 11px; font-size:12px;" onclick="ukazPodpis('dochazka', ${d.id})">Podpis${d.ma_fss ? ' + FSS' : ''}</button>` : '–'}</td></tr>`).join('');
+            } catch (e) { toast(e.message); }
+        }
+        async function stahniCsv() {
+            try {
+                const v = await volej('/api/nacti-dochazku');
+                const radky = [['id', 'navstevnik', 'stav', 'prichod', 'odchod'].join(';')];
+                v.forEach(d => radky.push([d.id, `"${(d.jmeno || '').replace(/"/g, '""')}"`, d.stav, d.cas_prichodu, d.cas_odchodu || ''].join(';')));
+                const blob = new Blob(['\ufeff' + radky.join('\n')], { type: 'text/csv;charset=utf-8' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'dochazka_' + new Date().toISOString().slice(0, 10) + '.csv';
+                a.click();
+            } catch (e) { toast(e.message); }
+        }
+        async function stahniZalohu() {
+            try {
+                const r = await fetch('/api/export-db', { headers: { 'X-Admin-Token': TOKEN } });
+                if (!r.ok) throw new Error('Export selhal');
+                const blob = await r.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'lintech_zaloha_' + new Date().toISOString().slice(0, 10) + '.sql';
+                a.click();
+            } catch (e) { toast(e.message); }
+        }
+
+        async function nactiStrany() {
+            try {
+                const strany = await volej('/api/nacti-pravidla');
+                document.getElementById('seznam-stran').innerHTML = strany.map((p, i) => {
+                    const jeObrazek = /^\s*<img/i.test(p.obsah);
+                    const nahled = jeObrazek
+                        ? p.obsah.replace(/^\s*<img /i, '<img loading="lazy" ')
+                        : '';
+                    const txt = jeObrazek ? 'stránka z PDF' : p.obsah.replace(/<[^>]*>/g, '').slice(0, 90);
+                    return `<div class="page-item">
+                <div class="nahled">${jeObrazek ? nahled : 'text'}</div>
+                <div class="txt"><b style="color:var(--blue);">Strana ${i + 1}</b> · ${esc(txt)}</div>
+                <div class="akce">
+                    <button class="b b-out" onclick="otevriNahled(${i})">Náhled</button>
+                    ${jeObrazek ? '' : `<button class="b b-out" onclick="otevriUpravu(${p.id})">Upravit</button>`}
+                    <button class="b b-red" onclick="smazStranu(${p.id})">Smazat</button>
+                </div>
+            </div>`;
+                }).join('') || '<p style="color:#8a929e; text-align:center;">Zatím žádné strany.</p>';
+                window._strany = strany;
+            } catch (e) { toast(e.message); }
+        }
+        async function pridejStranu() {
+            const text = document.getElementById('novy-text').value.trim();
+            if (!text) { toast('Napište obsah strany.'); return; }
+            try {
+                const strany = window._strany || [];
+                await volej('/api/uloz-pravidlo', { method: 'POST', body: JSON.stringify({ obsah: `<p>${esc(text)}</p>`, poradi: strany.length + 1 }) });
+                document.getElementById('novy-text').value = '';
+                toast('Strana přidána.'); nactiStrany();
+            } catch (e) { toast(e.message); }
+        }
+        function otevriUpravu(id) {
+            const strana = (window._strany || []).find(p => p.id === id);
+            if (!strana) return;
+            document.getElementById('up-id').value = id;
+            document.getElementById('up-text').value = strana.obsah.replace(/<[^>]*>/g, '');
+            document.getElementById('dlg-uprava').showModal();
+        }
+        async function ulozUpravu() {
+            const id = Number(document.getElementById('up-id').value);
+            const text = document.getElementById('up-text').value.trim();
+            if (!text) { toast('Strana nemůže být prázdná.'); return; }
+            try {
+                await volej('/api/uprav-pravidlo', { method: 'POST', body: JSON.stringify({ id, obsah: `<p>${esc(text)}</p>` }) });
+                document.getElementById('dlg-uprava').close();
+                toast('Uloženo.'); nactiStrany();
+            } catch (e) { toast(e.message); }
+        }
+        function smazStranu(id) {
+            potvrd('Smazat stranu?', 'Strana zmizí z pokynů pro návštěvníky.', async () => {
+                try { await volej('/api/smaz-stranku', { method: 'POST', body: JSON.stringify({ id }) }); toast('Smazáno.'); nactiStrany(); }
+                catch (e) { toast(e.message); }
+            });
+        }
+        function smazVse() {
+            potvrd('Smazat všechny strany?', 'Odstraní se úplně všechny pokyny. Tohle nejde vrátit.', async () => {
+                try { await volej('/api/smaz-pravidla', { method: 'POST', body: JSON.stringify({}) }); toast('Vše smazáno.'); nactiStrany(); }
+                catch (e) { toast(e.message); }
+            });
+        }
+
+        let nahledIdx = 0;
+        async function otevriNahled(i) {
+            if (!window._strany) { try { await nactiStrany(); } catch (e) {} }
+            const strany = window._strany || [];
+            if (!strany.length) { toast('Zatím nejsou žádné strany k náhledu.'); return; }
+            nahledIdx = Math.min(Math.max(0, i || 0), strany.length - 1);
+            vykresliNahled();
+            document.getElementById('dlg-nahled').showModal();
+        }
+        function vykresliNahled() {
+            const strany = window._strany || [];
+            const p = strany[nahledIdx];
+            if (!p) return;
+            const stage = document.getElementById('nh-stage');
+            stage.innerHTML = p.obsah;
+            stage.classList.toggle('je-obrazek', /^\s*<img/i.test(p.obsah));
+            stage.scrollTop = 0;
+            document.getElementById('nh-pocitadlo').innerText = `Strana ${nahledIdx + 1} z ${strany.length}`;
+            document.getElementById('nh-fill').style.width = ((nahledIdx + 1) / strany.length * 100) + '%';
+            document.getElementById('nh-zpet').disabled = nahledIdx === 0;
+            document.getElementById('nh-dal').disabled = nahledIdx === strany.length - 1;
+        }
+        function nahledKrok(smer) {
+            const n = (window._strany || []).length;
+            nahledIdx = Math.min(Math.max(0, nahledIdx + smer), n - 1);
+            vykresliNahled();
+        }
+        document.getElementById('dlg-nahled').addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft') nahledKrok(-1);
+            if (e.key === 'ArrowRight') nahledKrok(1);
+        });
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        async function importujPdf(input) {
+            const file = input.files[0];
+            input.value = '';
+            if (!file) return;
+            const stav = document.getElementById('pdf-stav');
+            try {
+                stav.innerText = 'Načítám dokument…';
+                const data = await file.arrayBuffer();
+                const doc = await pdfjsLib.getDocument({ data }).promise;
+                const strany = [];
+                for (let i = 1; i <= doc.numPages; i++) {
+                    stav.innerText = `Zpracovávám stranu ${i} z ${doc.numPages}…`;
+                    const page = await doc.getPage(i);
+                    const viewport = page.getViewport({ scale: 2.4 });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width; canvas.height = viewport.height;
+                    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+                    strany.push(`<img src="${canvas.toDataURL('image/jpeg', 0.82)}" style="max-width:100%; border-radius:8px;">`);
+                }
+                stav.innerText = 'Ukládám…';
+                await volej('/api/uloz-pravidla-davka', { method: 'POST', body: JSON.stringify({ strany }) });
+                stav.innerText = '';
+                toast(`Přidáno ${strany.length} stran.`);
+                nactiStrany();
+            } catch (e) {
+                stav.innerText = '';
+                toast('Import se nepovedl: ' + e.message);
+            }
+        }
+
+        nactiPrehled();
+        setInterval(() => {
+            const aktivni = document.querySelector('nav button.active');
+            if (aktivni && aktivni.dataset.s === 'prehled') nactiPrehled();
+        }, 20000);
+    </script>
+    <script>
+        (function () {
+            const b = window.GB_BRAND || {};
+            const cil = document.getElementById('gb-brand-text');
+            if (b.logo) {
+                const img = document.createElement('img');
+                img.src = b.logo;
+                img.style.cssText = 'max-height:30px; max-width:140px; vertical-align:middle; margin-right:10px;';
+                cil.parentNode.insertBefore(img, cil);
+            }
+            if (b.company) cil.innerText = b.company + ' · Správa návštěv';
+        })();
+
+        async function otevriWebTerminal() {
+            try {
+                const d = await volej('/api/admin/terminal-token', { method: 'POST' });
+                window.open(location.pathname.replace(/\/panel$/, '') + '/terminal?t=' + d.token, '_blank');
+            } catch (e) {
+                document.getElementById('gb-akce-stav').innerText = 'Terminál se nepodařilo otevřít: ' + e.message;
+                setTimeout(() => document.getElementById('gb-akce-stav').innerText = '', 5000);
+            }
+        }
+
+        async function guestbookAkce(akce, dotaz) {
+            const proved = async () => {
+                try {
+                    await volej('/api/admin/guestbook-akce', { method: 'POST', body: JSON.stringify({ akce }) });
+                    document.getElementById('gb-akce-stav').innerText = 'Povel předán aplikaci.';
+                    setTimeout(() => document.getElementById('gb-akce-stav').innerText = '', 5000);
+                } catch (e) {
+                    document.getElementById('gb-akce-stav').innerText = 'Nepovedlo se: ' + e.message;
+                }
+            };
+            if (dotaz && typeof potvrd === 'function') potvrd('Opravdu?', dotaz, proved);
+            else proved();
+        }
+    </script>
+    <dialog id="dlg-podpis">
+        <div class="inner">
+            <h3 id="podpis-titulek" style="margin:0 0 10px; color:var(--blue);">Podpis</h3>
+            <div id="podpis-telo"
+                style="background:#f4f6f9; border:1px solid var(--line); border-radius:10px; padding:14px; text-align:center; min-width:340px;">
+            </div>
+            <div class="radek-akce" style="margin-top:12px;">
+                <button class="b b-green" id="podpis-fss" style="display:none;">Stáhnout FSS (forenzní)</button>
+                <button class="b b-out" onclick="document.getElementById('dlg-podpis').close()">Zavřít</button>
+            </div>
+        </div>
+    </dialog>
+    <script>
+        async function ukazPodpis(typ, id) {
+            try {
+                const p = await volej('/api/admin/podpis/' + typ + '/' + id);
+                document.getElementById('podpis-titulek').innerText = 'Podpis – ' + (p.jmeno || '');
+                document.getElementById('podpis-telo').innerHTML = p.obrazek
+                    ? '<img src="' + p.obrazek + '" style="max-width:520px; max-height:260px; background:#fff; border-radius:8px; padding:8px;">'
+                    : '<span style="color:#6b7482;">Obrázek podpisu tu není' + (p.ma_fss ? ', existuje jen forenzní FSS záznam.' : '.') + '</span>';
+                const fssBtn = document.getElementById('podpis-fss');
+                fssBtn.style.display = p.ma_fss ? 'inline-block' : 'none';
+                fssBtn.onclick = () => stahniFss(typ, id);
+                document.getElementById('dlg-podpis').showModal();
+            } catch (e) { alert('Podpis se nepodařilo načíst: ' + e.message); }
+        }
+
+        async function stahniFss(typ, id) {
+            try {
+                const r = await fetch('/api/admin/fss-soubor/' + typ + '/' + id, { headers: { 'X-Admin-Token': TOKEN } });
+                if (!r.ok) { const err = await r.json().catch(() => ({})); throw new Error(err.error || 'HTTP ' + r.status); }
+                const blob = await r.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'podpis_' + typ + '_' + id + '.fss';
+                a.click();
+                URL.revokeObjectURL(a.href);
+            } catch (e) { alert('FSS se nepodařilo stáhnout: ' + e.message); }
+        }
+
+        let dbStav = { tabulka: null, strana: 0, celkem: 0, naStranu: 20, pk: null, radky: [], sloupce: [] };
+
+        async function dbTabulky() {
+            try {
+                const tabulky = await volej('/api/admin/db-tabulky');
+                document.getElementById('db-tab-seznam').innerHTML = tabulky.map(t =>
+                    `<button class="b ${t.nazev === dbStav.tabulka ? 'b-blue' : ''}" style="padding:7px 12px; font-size:12.5px;" onclick="dbVyber('${t.nazev}')">${t.nazev} (${t.pocet})</button>`
+                ).join('');
+                if (!dbStav.tabulka && tabulky.length) dbVyber(tabulky[0].nazev);
+            } catch (e) {
+                document.getElementById('db-tab-seznam').innerHTML = '<span style="color:var(--red);">Databáze nedostupná: ' + e.message + '</span>';
+            }
+        }
+
+        function dbVyber(nazev) {
+            dbStav.tabulka = nazev;
+            dbStav.strana = 0;
+            dbTabulky();
+            dbNacti(0);
+        }
+
+        function dbStrana(smer) {
+            const posledni = Math.max(0, Math.ceil(dbStav.celkem / dbStav.naStranu) - 1);
+            dbNacti(Math.min(Math.max(0, dbStav.strana + smer), posledni));
+        }
+
+        async function dbNacti(strana) {
+            if (!dbStav.tabulka) return;
+            dbStav.strana = strana;
+            const grid = document.getElementById('db-grid');
+            grid.innerHTML = '<tr><td style="padding:14px;">Načítám…</td></tr>';
+            try {
+                const d = await volej('/api/admin/db-radky', {
+                    method: 'POST', body: JSON.stringify({
+                        tabulka: dbStav.tabulka, strana, naStranu: dbStav.naStranu,
+                        hledat: document.getElementById('db-hledat').value
+                    })
+                });
+                Object.assign(dbStav, { celkem: d.celkem, pk: d.pk, radky: d.radky, sloupce: d.sloupce });
+                document.getElementById('db-titulek').innerText = dbStav.tabulka;
+                document.getElementById('db-pocet').innerText = d.celkem + ' záznamů';
+                const stran = Math.max(1, Math.ceil(d.celkem / dbStav.naStranu));
+                document.getElementById('db-strankovani').innerText = (strana + 1) + ' / ' + stran;
+                document.getElementById('db-zpet').disabled = strana <= 0;
+                document.getElementById('db-vpred').disabled = strana >= stran - 1;
+                let html = '<tr>' + d.sloupce.map(sl => '<th>' + esc(sl.nazev) + '</th>').join('') + (d.pk ? '<th></th>' : '') + '</tr>';
+                d.radky.forEach((r, i) => {
+                    html += '<tr>' + d.sloupce.map(sl => {
+                        const v = r[sl.nazev];
+                        if (sl.nazev === 'fss_encrypted') {
+                            const typ = dbStav.tabulka === 'navstevnici' ? 'navstevnik' : dbStav.tabulka === 'dochazka' ? 'dochazka' : null;
+                            const id = d.pk ? r[d.pk] : null;
+                            if (v && typ && id != null) return '<td><button class="b b-green" style="padding:5px 10px; font-size:12px;" onclick="stahniFss(\'' + typ + '\', ' + Number(id) + ')">Stáhnout .fss</button></td>';
+                            return '<td style="color:#96a0ad;">–</td>';
+                        }
+                        if (v && typeof v === 'object' && v.dlouhy) return '<td style="color:#96a0ad; font-style:italic;">' + esc(v.nahled) + '</td>';
+                        const editovatelna = d.pk && !sl.pk && !sl.dlouhy;
+                        return '<td ' + (editovatelna ? `ondblclick="dbUpravBunku(this, ${i}, '${sl.nazev}')" title="Dvojklikem upravíte" style="cursor:text;"` : '') + '>' + esc(v) + '</td>';
+                    }).join('');
+                    if (d.pk) html += `<td><button class="b b-red" style="padding:5px 10px; font-size:12px;" onclick="dbSmazRadek(${i})">✕</button></td>`;
+                    html += '</tr>';
+                });
+                grid.innerHTML = html;
+            } catch (e) {
+                grid.innerHTML = '<tr><td style="padding:14px; color:var(--red);">Nepovedlo se: ' + e.message + '</td></tr>';
+            }
+        }
+
+        function dbUpravBunku(bunka, radekIdx, sloupec) {
+            if (bunka.querySelector('input')) return;
+            const puvodni = dbStav.radky[radekIdx][sloupec];
+            bunka.innerHTML = '';
+            const inp = document.createElement('input');
+            inp.value = puvodni == null ? '' : puvodni;
+            inp.style.cssText = 'width:100%; border:1.5px solid var(--blue); border-radius:5px; padding:4px 6px; font:inherit;';
+            bunka.appendChild(inp);
+            inp.focus(); inp.select();
+            let hotovo = false;
+            const uloz = async () => {
+                if (hotovo) return; hotovo = true;
+                const nova = inp.value;
+                if (nova === (puvodni == null ? '' : puvodni)) { bunka.innerText = puvodni == null ? '' : puvodni; return; }
+                try {
+                    await volej('/api/admin/db-uprav', {
+                        method: 'POST', body: JSON.stringify({
+                            tabulka: dbStav.tabulka, pk: dbStav.pk, pkHodnota: dbStav.radky[radekIdx][dbStav.pk], sloupec, hodnota: nova
+                        })
+                    });
+                    dbStav.radky[radekIdx][sloupec] = nova;
+                    bunka.innerText = nova;
+                } catch (e) {
+                    bunka.innerText = puvodni == null ? '' : puvodni;
+                    alert('Uložení se nepovedlo: ' + e.message);
+                }
+            };
+            inp.addEventListener('keydown', ev => {
+                if (ev.key === 'Enter') uloz();
+                if (ev.key === 'Escape') { hotovo = true; bunka.innerText = puvodni == null ? '' : puvodni; }
+            });
+            inp.addEventListener('blur', uloz);
+        }
+
+        function dbSmazRadek(radekIdx) {
+            const r = dbStav.radky[radekIdx];
+            potvrd('Smazat záznam?', dbStav.pk + ' = ' + r[dbStav.pk] + ' z tabulky ' + dbStav.tabulka + '. Tohle nejde vrátit.', async () => {
+                try {
+                    await volej('/api/admin/db-smaz', { method: 'POST', body: JSON.stringify({ tabulka: dbStav.tabulka, pk: dbStav.pk, pkHodnota: r[dbStav.pk] }) });
+                    dbNacti(dbStav.strana);
+                } catch (e) { alert('Smazání se nepovedlo: ' + e.message); }
+            });
+        }
+    </script>
+</body>
+
+</html>
