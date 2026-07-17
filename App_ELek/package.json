@@ -2,7 +2,7 @@
   "name": "guestbook",
   "desktopName": "GuestBook",
   "homepage": "localhost",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "GuestBook – kniha navstev: kiosek, server a sprava v jedne aplikaci",
   "main": "main.js",
   "author": "LINTECH, spol. s r.o.",
