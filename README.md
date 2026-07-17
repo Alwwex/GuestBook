@@ -161,18 +161,15 @@ SDK se stahuje z privátního registru `npm.wacom.com`. Repozitář proto obsahu
 @wacom:registry=https://npm.wacom.com/node-modules/
 ```
 
-Ve většině případů tohle stačí a `npm install` projde. Pokud registr vrátí `401 Unauthorized` nebo `403 Forbidden`, vyžaduje navíc autentizační token vázaný na vývojářský účet Wacomu:
+Pokud registr vrátí `401 Unauthorized` nebo `403 Forbidden`, vyžaduje navíc autentizační token vázaný na vývojářský účet Wacomu:
 
 1. Zaregistrujte se (zdarma) na [developer.wacom.com](https://developer.wacom.com) a přihlaste se do [Developer Dashboardu](https://developer.wacom.com/developer-dashboard).
 2. V dashboardu u *Signature SDK for JavaScript* najdete návod, který vám vygeneruje hotový `.npmrc` — obsahuje řádek s registrem a řádek s tokenem ve tvaru:
    ```ini
    //npm.wacom.com/node-modules/:_authToken=VÁŠ_TOKEN
    ```
-3. Řádek s tokenem doplňte do `App_ELek/.npmrc` (nebo do svého uživatelského `~/.npmrc`, na Windows `C:\Users\<jméno>\.npmrc` — pak platí pro všechny projekty na počítači) a spusťte `npm install` znovu.
+3. Řádek s tokenem doplňte do `App_ELek/.npmrc` a spusťte `npm install` znovu.
 
-> ⚠️ **Token nikdy necommitujte do veřejného repozitáře.** Pokud ho vkládáte do projektového `.npmrc`, přidejte soubor do `.gitignore` a v repu nechte jen verzi se samotným registrem. Token je osobní přihlašovací údaj — kdo ho má, stahuje pod vaším účtem.
-
-Tip: pokud vám instalace dřív fungovala na jiném počítači, token nejspíš najdete tam v `~/.npmrc` a stačí ho zkopírovat.
 
 Podporované buildovací platformy: Windows 10/11 a Linux (x64 i ARM64 pro Raspberry Pi). Build pro Windows dělejte na Windows, build pro Linux na Linuxu.
 
