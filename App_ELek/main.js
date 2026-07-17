@@ -900,10 +900,64 @@ async function zastavDatabazi() {
     dbProces = null;
 }
 
+function spustJakoRoot(skript) {
+    if (typeof process.getuid === 'function' && process.getuid() === 0) return spustPrikaz('sh', ['-c', skript]);
+    return spustPrikaz('sudo', ['-n', 'sh', '-c', skript])
+        .catch(() => spustPrikaz('pkexec', ['sh', '-c', skript]));
+}
+
+async function instalujSystemovouDb(hlas) {
+    const heslo = crypto.randomBytes(12).toString('base64url');
+
+    hlas('Kontroluji, jestli je MariaDB v systému…', null);
+    let jeNainstalovana = true;
+    try { await spustPrikaz('sh', ['-c', 'command -v mariadbd mysqld >/dev/null 2>&1 || ls /usr/sbin/mariadbd /usr/sbin/mysqld >/dev/null 2>&1']); }
+    catch (er) { jeNainstalovana = false; }
+
+    try {
+        if (!jeNainstalovana) {
+            hlas('Instaluji MariaDB ze systémových balíčků (na slabším stroji to pár minut potrvá)…', null);
+            await spustJakoRoot(
+                'command -v apt-get >/dev/null 2>&1 || { echo "Tenhle systém nepouziva apt."; exit 1; }; ' +
+                'export DEBIAN_FRONTEND=noninteractive; apt-get update -qq; apt-get install -y -qq mariadb-server'
+            );
+        }
+
+        hlas('Zapínám databázovou službu…', null);
+        await spustJakoRoot('systemctl enable --now mariadb 2>/dev/null || systemctl enable --now mysql 2>/dev/null || true');
+        if (!(await pockejNaPort(3306))) {
+            throw new Error('Služba mariadb se nerozběhla – zkontrolujte ji příkazem: sudo systemctl status mariadb');
+        }
+
+        hlas('Zakládám účet pro aplikaci…', null);
+        const sql = [
+            "CREATE USER IF NOT EXISTS 'guestbook'@'localhost' IDENTIFIED BY '" + heslo + "'",
+            "CREATE USER IF NOT EXISTS 'guestbook'@'127.0.0.1' IDENTIFIED BY '" + heslo + "'",
+            "SET PASSWORD FOR 'guestbook'@'localhost' = PASSWORD('" + heslo + "')",
+            "SET PASSWORD FOR 'guestbook'@'127.0.0.1' = PASSWORD('" + heslo + "')",
+            "GRANT ALL PRIVILEGES ON *.* TO 'guestbook'@'localhost'",
+            "GRANT ALL PRIVILEGES ON *.* TO 'guestbook'@'127.0.0.1'",
+            'FLUSH PRIVILEGES'
+        ].join('; ');
+        await spustJakoRoot('mariadb -e "' + sql + '" 2>/dev/null || mysql -e "' + sql + '"');
+    } catch (er) {
+        if (/sudo|pkexec|password is required|Not authorized|polkit/i.test(er.message)) {
+            throw new Error('Nepodařilo se získat práva správce. Nainstalujte databázi v terminálu příkazem: sudo apt install mariadb-server – a pak průvodce spusťte znovu.');
+        }
+        throw er;
+    }
+
+    zapisEnvFile(SERVER_ENV_PATH, { DB_HOST: '127.0.0.1', DB_PORT: 3306, DB_USER: 'guestbook', DB_PASSWORD: heslo, DB_NAME: 'evidence_navstev' });
+    zapisEnvFile(APP_ENV_PATH, { SPUSTIT_DB: 0 });
+
+    hlas('Databáze běží jako systémová služba.', 100);
+    return { host: '127.0.0.1', port: 3306, user: 'guestbook', password: heslo, database: 'evidence_navstev' };
+}
+
 ipcMain.handle('db-instaluj', async (e) => {
     if (process.platform === 'darwin') throw new Error('Automatická instalace databáze na macOS zatím není – nainstalujte MariaDB třeba přes Homebrew a vyplňte připojení níže.');
-    if (process.platform !== 'win32' && process.arch !== 'x64') throw new Error('Automatická instalace na Linuxu funguje jen na procesorech x86_64. Na ARM (třeba Raspberry Pi) nainstalujte balíček mariadb-server a vyplňte připojení níže.');
     const hlas = (text, procenta) => { try { e.sender.send('db-instalace-stav', { text, procenta }); } catch (er) {}; console.log('[db-instalace]', text); };
+    if (process.platform !== 'win32' && process.arch !== 'x64') return instalujSystemovouDb(hlas);
 
     const port = await volnyPort(3306);
     const heslo = crypto.randomBytes(12).toString('base64url');
