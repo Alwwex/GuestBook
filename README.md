@@ -1,18 +1,17 @@
 <div align="center">
 
-<img src="docs/screenshots/logo.png" alt="GuestBook" width="120">
+<img src="docs/screenshots/icon.ico" alt="GuestBook" width="120">
 
 # GuestBook
 
 **Elektronická kniha návštěv pro recepci** — dotykový kiosek, podpisový tablet Wacom a webová správa v jedné aplikaci.
 
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20Raspberry%20Pi-00205B)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20Pi%20OS-00205B)
 ![Electron](https://img.shields.io/badge/Electron-42-47848F)
 ![Node](https://img.shields.io/badge/Node.js-18%2B-339933)
 ![MySQL](https://img.shields.io/badge/MySQL%20%2F%20MariaDB-8%2B-4479A1)
-![License](https://img.shields.io/badge/license-propriet%C3%A1rn%C3%AD-EE2737)
 
-[Instalace](#instalace) · [Sestavení ze zdrojáků](#sestavení-ze-zdrojáků) · [Konfigurace](#konfigurace) · [Webová správa](#webová-správa) · [Řešení potíží](#řešení-potíží)
+[Instalace](#instalace) · [Sestavení zdrojového kódu](#sestavení-ze-zdrojáků) · [Konfigurace](#konfigurace) · [Webová správa](#webová-správa) 
 
 </div>
 
@@ -31,7 +30,7 @@ Návštěvník přijde na recepci, na dotykové obrazovce se zaregistruje (nebo 
   - [Jak spolu části komunikují](#jak-spolu-části-komunikují)
 - [Instalace](#instalace)
   - [Instalační průvodce krok za krokem](#instalační-průvodce-krok-za-krokem)
-- [Sestavení ze zdrojáků](#sestavení-ze-zdrojáků)
+- [Sestavení zdrojového kódu](#sestavení-zdrojového-kódu)
   - [Prerekvizity](#prerekvizity)
   - [Spuštění ve vývojovém režimu](#spuštění-ve-vývojovém-režimu)
   - [Build instalátorů](#build-instalátorů)
@@ -46,20 +45,17 @@ Návštěvník přijde na recepci, na dotykové obrazovce se zaregistruje (nebo 
 - [Zabezpečení](#zabezpečení)
 - [Nasazení na Raspberry Pi](#nasazení-na-raspberry-pi)
 - [Struktura projektu](#struktura-projektu)
-- [Řešení potíží](#řešení-potíží)
-- [Licence](#licence)
 
 ## Hlavní funkce
 
 - **Registrace návštěvníků** — jméno, e-mail, telefon a firma přes dotykový formulář. Systém hlídá duplicity: pokud e-mail nebo telefon už v databázi existuje, kiosek návštěvníka navede na variantu „Už jsem u vás byl(a)", kde se jen vyhledá podle jména.
-- **Bezpečnostní pokyny** — libovolný počet stran, kterými návštěvník před podpisem prolistuje. Strany jsou buď textové (píšou se přímo ve správě), nebo naimportované z PDF — dokument se při importu rozpadne na jednotlivé strany. PDF strany jdou na kiosku přiblížit tlačítky **− / +** (100–250 %) a rolovat prstem.
-- **Podpis** — prstem přímo na obrazovce kiosku, nebo perem na tabletu Wacom. Tablet zároveň ukazuje návštěvníkovi výzvu k podpisu. S platnou licencí Wacom Signature SDK se podpis ukládá i jako **šifrovaný FSS soubor** s biometrickými daty tahu (tlak, rychlost, čas) — právně silnější forma podpisu než pouhý obrázek.
+- **Bezpečnostní pokyny** — libovolný počet stran, kterými návštěvník před podpisem prolistuje. Strany jsou buď textové (píšou se přímo ve správě), nebo naimportované z PDF. PDF strany jdou na kiosku přiblížit tlačítky **− / +** (100–250 %).
+- **Podpis** — prstem přímo na obrazovce kiosku, nebo perem na tabletu Wacom. Tablet zároveň ukazuje návštěvníkovi výzvu k podpisu. S platnou licencí Wacom Signature SDK se podpis ukládá i jako **šifrovaný FSS soubor** s biometrickými daty tahu (tlak, rychlost, čas ...).
 - **Docházka** — každý příchod a odchod se zaznamenává s časem a podpisem. Ve správě je vidět kompletní historie s exportem do CSV a náhledy podpisů.
 - **Webová správa** — běží přímo na API serveru, přistupuje se k ní prohlížečem odkudkoli ze sítě. Podrobně v sekci [Webová správa](#webová-správa).
 - **Jednotný vzhled** — logo, firemní barvy a texty se nastaví jednou (v průvodci nebo ve správě) a platí pro kiosek i administraci. Změna provedená ve správě se na běžícím kiosku projeví do několika sekund, bez restartu.
 - **Vícejazyčný kiosek** — návštěvník si jazyk přepne sám na úvodní obrazovce.
 - **Discord notifikace** — volitelně se každý příchod hlásí do zvoleného kanálu přes webhook.
-- **Vestavěný terminál** — ze správy se dá otevřít webový terminál na server, u kiosků připojených přes SSH i vzdálený přístup na kiosek.
 
 ## Screenshoty
 
@@ -70,7 +66,6 @@ Návštěvník přijde na recepci, na dotykové obrazovce se zaregistruje (nebo 
 | ![Podpis na obrazovce](docs/screenshots/kiosek-podpis.png) | ![Správa – docházka](docs/screenshots/sprava-dochazka.png) |
 | ![Instalační průvodce](docs/screenshots/pruvodce.png) | ![Správa – vzhled](docs/screenshots/sprava-vzhled.png) |
 
-> **Kam se screenshoty:** do složky `docs/screenshots/` pod názvy použitými výše (`kiosek-uvod.png`, `kiosek-formular.png`, `kiosek-pokyny.png`, `kiosek-podpis.png`, `pruvodce.png`, `sprava-prehled.png`, `sprava-pokyny.png`, `sprava-dochazka.png`, `sprava-vzhled.png`, volitelně `logo.png` pro hlavičku). U pokynů vyfoťte otevřenou PDF stranu i se zoom tlačítky vpravo dole, u správy pokynů otevřený dialog *Náhled kiosku* — to jsou funkce, které na první pohled prodávají nejvíc.
 
 ## Architektura
 
@@ -79,13 +74,13 @@ Repozitář obsahuje dvě části, které se distribuují jako jedna aplikace:
 | Část | Technologie | K čemu je |
 |---|---|---|
 | **App_ELek** | Electron 42 | Obrazovka kiosku, instalační průvodce, okno nastavení, tray ikona. Umí sama spustit a hlídat API server jako podproces. |
-| **API_Server** | Node.js + Express + mysql2 | REST API pro kiosky, práce s MySQL, šifrování FSS podpisů, servírování webové správy. Dá se provozovat i samostatně bez Electronu. |
+| **API_Server** | Node.js + Express + mysql2 | REST API pro kiosky, práce s MySQL, šifrování FSS podpisů. Dá se provozovat i samostatně bez Electronu. |
 
 Při buildu instalátoru se `API_Server` přibalí do Electronu jako *extra resource*, takže koncový uživatel instaluje jediný soubor.
 
 ### Role zařízení
 
-Roli vybíráte v instalačním průvodci při prvním spuštění; kdykoli později jde změnit přes `npm run pruvodce` nebo z tray menu.
+Roli vybíráte v instalačním průvodci při prvním spuštění; kdykoli později jde změnit přes `npm run pruvodce`.
 
 | Role | Co na zařízení běží | Typické použití |
 |---|---|---|
@@ -148,17 +143,16 @@ Průvodce provede kompletním nastavením; nic se needituje ručně. Kroky se li
 7. **Discord** *(volitelné)* — webhook pro hlášení příchodů.
 8. **Souhrn** — kontrola a zápis konfigurace, spuštění v cílové roli.
 
-## Sestavení ze zdrojáků
+## Sestavení zdrojového kódu
 
 ### Prerekvizity
 
 - **Node.js 18 nebo novější** — potřeba jen pro vývoj a build; hotový instalátor si nese vlastní Electron runtime a uživatel Node nepotřebuje. Ověřte `node --version`.
 - **npm** — instaluje se s Node.js.
-- **MySQL 8+ nebo MariaDB 10.6+** — kamkoli dosáhnete po síti; pro lokální vývoj stačí `docker run -e MYSQL_ROOT_PASSWORD=devheslo -p 3306:3306 mariadb:11`. Schéma založí instalační průvodce, ručně nic vytvářet nemusíte.
-- **Build nástroje pro nativní moduly** — `mysql2` je čistý JS, ale electron-builder si na Windows může vyžádat [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/), na Debianu `build-essential`.
+- **MySQL 8+ nebo MariaDB 10.6+** — kamkoli dosáhnete po síti; pro lokální vývoj stačí `docker run -e MYSQL_ROOT_PASSWORD=devheslo -p 3306:3306 mariadb:11`. 
 - **Wacom Signature SDK licence** *(volitelné)* — klíč a secret pro `@wacom/signature-sdk`; bez nich se přeskočí FSS a podpisy fungují jen jako obrázek z canvasu.
 
-Podporované buildovací platformy: Windows 10/11 a Linux (x64 i ARM64 pro Raspberry Pi). Build pro Windows dělejte na Windows, build pro Linux na Linuxu — cross-build electron-builderem je možný, ale netestujeme ho.
+Podporované buildovací platformy: Windows 10/11 a Linux (x64 i ARM64 pro Raspberry Pi). Build pro Windows dělejte na Windows, build pro Linux na Linuxu.
 
 ### Spuštění ve vývojovém režimu
 
@@ -188,7 +182,7 @@ cd API_Server
 SERVER_ENV_PATH=~/.config/guestbook/server.env node server.js
 ```
 
-Server při startu validuje konfiguraci a odmítne nastartovat bez platného `API_KEY` (min. 16 znaků) a `FSS_ENCRYPTION_KEY` (64 hex znaků) — přesné příkazy k vygenerování vypíše do konzole.
+Server při startu validuje konfiguraci a odmítne nastartovat bez platného `API_KEY` (min. 16 znaků) a `FSS_ENCRYPTION_KEY` (64 hex znaků).
 
 ### Build instalátorů
 
@@ -205,8 +199,6 @@ Co se do balíčku dostane, řídí sekce `build` v `App_ELek/package.json`:
 - `extraResources` — celý `API_Server` (bez `.env`, podpisů `signatures/`, `*.fss` a `admin_runtime` — citlivé věci se do instalátoru nikdy nebalí),
 - NSIS je nastavený česky, s volbou instalační složky, zástupci a úklidem dat při odinstalaci.
 
-Po buildu ověřte, že v `dist/` je artefakt a že čistá instalace na prázdném stroji nastartuje průvodce.
-
 ## Konfigurace
 
 ### Kde konfigurace leží
@@ -218,9 +210,7 @@ Průvodce zapisuje konfiguraci do **datové složky aplikace** (Electron `userDa
 | Windows | `%APPDATA%\guestbook\` |
 | Linux | `~/.config/guestbook/` |
 
-Uvnitř najdete `app.env` (kiosek), `server.env` (server), `theme.json` (vzhled) a případně `mariadb/` + `mariadb-data/` (portable databáze z průvodce). Formát je klasický `KLÍČ=hodnota`, řádky s `#` jsou komentáře.
-
-> Starší verze ukládaly `.env` přímo do složek aplikace — při startu se automaticky přenesou na nové místo.
+Uvnitř najdete `app.env` (kiosek), `server.env` (server), `theme.json` (vzhled) a případně `mariadb/` + `mariadb-data/` (portable databáze z průvodce). 
 
 ### `app.env` — nastavení kiosku
 
@@ -232,7 +222,7 @@ Uvnitř najdete `app.env` (kiosek), `server.env` (server), `theme.json` (vzhled)
 | `PORT` | `3000` | Port API serveru. |
 | `API_KEY` | *(generuje průvodce)* | Sdílený klíč kiosek ↔ server, min. 16 znaků. Aplikace ho při startu sama synchronizuje s lokálním serverem, pokud se liší. |
 | `WACOM_LICENCE_KEY` | *(prázdné)* | Licenční klíč Wacom Signature SDK. |
-| `WACOM_LICENCE_SECRET` | *(prázdné)* | Licenční secret. Pozor při kopírování — musí se přenést celý, diagnostika v Nastavení zkrácený secret pozná a nahlásí. |
+| `WACOM_LICENCE_SECRET` | *(prázdné)* | Licenční secret.  |
 
 ### `server.env` — nastavení serveru
 
@@ -304,8 +294,8 @@ Schéma zakládá instalační průvodce (`CREATE DATABASE` + tři tabulky, kód
 
 | Tabulka | Obsah |
 |---|---|
-| `navstevnici` | Kmenová data: jméno, e-mail, telefon, firma, registrační podpis (`podpis_base64`), šifrovaný FSS (`fss_encrypted`), čas vytvoření. Indexy na jméno a e-mail. |
-| `dochazka` | Jednotlivé návštěvy: vazba na návštěvníka (FK s `ON DELETE CASCADE`), stav `Uvnitr`/`Odesel`, časy příchodu a odchodu, podpis při vstupu, FSS. |
+| `navstevnici` | Kmenová data: jméno, e-mail, telefon, firma, registrační podpis (`podpis_base64`), šifrovaný FSS (`fss_encrypted`), čas vytvoření.|
+| `dochazka` | Jednotlivé návštěvy: vazba na návštěvníka, stav `Uvnitr`/`Odesel`, časy příchodu a odchodu, podpis při vstupu, FSS. |
 | `pravidla` | Strany bezpečnostních pokynů: HTML obsah (text nebo obrázek strany PDF) a pořadí. |
 
 Zálohu celé databáze (struktura + data jako `.sql`) pořídíte jedním kliknutím ve správě, záložka Přehled → *Stáhnout zálohu*, případně `GET /api/export-db` s admin tokenem. Při upgradu ze starší verze bez FSS sloupců server po startu upozorní na chybějící migraci (`migrace_fss.sql`).
@@ -372,32 +362,4 @@ Ověřená sestava: Raspberry Pi s dotykovým displejem jako *jen kiosek*, serve
     └── admin_rotace.json      nastavení rotace adresy správy
 ```
 
-## Řešení potíží
 
-**Server nenastartuje a píše chybu o `API_KEY` / `FSS_ENCRYPTION_KEY`.**
-V `server.env` chybí povinné klíče. Chybová hláška obsahuje přesný příkaz k vygenerování; klíče doplňte a server spusťte znovu.
-
-**Kiosek hlásí „neplatná autorizace" / data se nenačítají.**
-API klíč kiosku a serveru se liší. Porovnejte `API_KEY` v `app.env` a `server.env`; při lokálním serveru je aplikace srovná sama při startu, u vzdáleného serveru je nutné mít stejný klíč na obou stranách. Konzole serveru u odmítnutých požadavků vypisuje začátky obou klíčů, takže nesoulad hned uvidíte.
-
-**Nemůžu se dostat do správy — adresa nefunguje.**
-Adresa rotuje; stará URL přestává platit. Otevírejte správu tlačítkem v aplikaci nebo z aktuálního výpisu konzole serveru. Pokud vadí, rotaci vypněte ve správě (Přehled) nebo v `admin_rotace.json`.
-
-**Podpisy se neukládají jako FSS, sloupec v databázi je prázdný.**
-FSS vzniká jen s platnou Wacom licencí v `app.env` **a** podpisem perem na tabletu — podpis prstem na obrazovce FSS nevytváří. Stav licence ukáže diagnostika v Nastavení; typický problém je neúplně zkopírovaný `WACOM_LICENCE_SECRET`.
-
-**Správa hlásí, že panel nejde dešifrovat.**
-Změnil se `FSS_ENCRYPTION_KEY` a `admin.enc` byl zašifrovaný starým klíčem. Buď vraťte původní klíč, nebo přiložte `admin_panel.html` vedle `server.js` — při startu se zašifruje znovu.
-
-**Naimportované PDF je na kiosku rozmazané nebo malé.**
-Strany PDF se rastrují při importu; dokumenty nahrané starší verzí smažte a naimportujte znovu — aktuální verze renderuje ve vyšším rozlišení a na kiosku strany jdou přibližovat a rolovat.
-
-**Po upgradu se ve správě nezobrazují nové funkce.**
-Server servíruje panel zašifrovaný při startu — po výměně `admin_panel.html` server restartujte.
-
-**Server po startu varuje „chybí sloupce fss_encrypted".**
-Databáze pochází ze starší verze; spusťte přiloženou migraci `migrace_fss.sql`.
-
-## Licence
-
-Proprietární software LINTECH, spol. s r.o. Všechna práva vyhrazena; bez písemného souhlasu autora není dovoleno software šířit ani upravovat.
