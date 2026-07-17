@@ -150,7 +150,29 @@ Průvodce provede kompletním nastavením; nic se needituje ručně. Kroky se li
 - **Node.js 18 nebo novější** — potřeba jen pro vývoj a build; hotový instalátor si nese vlastní Electron runtime a uživatel Node nepotřebuje. Ověřte `node --version`.
 - **npm** — instaluje se s Node.js.
 - **MySQL 8+ nebo MariaDB 10.6+** — kamkoli dosáhnete po síti; pro lokální vývoj stačí `docker run -e MYSQL_ROOT_PASSWORD=devheslo -p 3306:3306 mariadb:11`. 
-- **Wacom Signature SDK licence** *(volitelné)* — klíč a secret pro `@wacom/signature-sdk`; bez nich se přeskočí FSS a podpisy fungují jen jako obrázek z canvasu.
+- **Přístup k npm registru Wacomu** — balíček `@wacom/signature-sdk` **není na veřejném npm**; bez nastavení registru skončí `npm install` v `App_ELek` chybou `404 Not Found`. Postup níže.
+- **Wacom Signature SDK licence** *(volitelné)* — klíč a secret pro `@wacom/signature-sdk`; bez nich se přeskočí FSS a podpisy fungují jen jako obrázek z canvasu. Pozor, licence je jiná věc než přístup k registru — registr je potřeba vždy už při instalaci závislostí, licence až za běhu pro FSS.
+
+#### Přístup k npm registru Wacomu
+
+SDK se stahuje z privátního registru `npm.wacom.com`. Repozitář proto obsahuje soubor `App_ELek/.npmrc`, který scope `@wacom` na tento registr přesměruje:
+
+```ini
+@wacom:registry=https://npm.wacom.com/node-modules/
+```
+
+Ve většině případů tohle stačí a `npm install` projde. Pokud registr vrátí `401 Unauthorized` nebo `403 Forbidden`, vyžaduje navíc autentizační token vázaný na vývojářský účet Wacomu:
+
+1. Zaregistrujte se (zdarma) na [developer.wacom.com](https://developer.wacom.com) a přihlaste se do [Developer Dashboardu](https://developer.wacom.com/developer-dashboard).
+2. V dashboardu u *Signature SDK for JavaScript* najdete návod, který vám vygeneruje hotový `.npmrc` — obsahuje řádek s registrem a řádek s tokenem ve tvaru:
+   ```ini
+   //npm.wacom.com/node-modules/:_authToken=VÁŠ_TOKEN
+   ```
+3. Řádek s tokenem doplňte do `App_ELek/.npmrc` (nebo do svého uživatelského `~/.npmrc`, na Windows `C:\Users\<jméno>\.npmrc` — pak platí pro všechny projekty na počítači) a spusťte `npm install` znovu.
+
+> ⚠️ **Token nikdy necommitujte do veřejného repozitáře.** Pokud ho vkládáte do projektového `.npmrc`, přidejte soubor do `.gitignore` a v repu nechte jen verzi se samotným registrem. Token je osobní přihlašovací údaj — kdo ho má, stahuje pod vaším účtem.
+
+Tip: pokud vám instalace dřív fungovala na jiném počítači, token nejspíš najdete tam v `~/.npmrc` a stačí ho zkopírovat.
 
 Podporované buildovací platformy: Windows 10/11 a Linux (x64 i ARM64 pro Raspberry Pi). Build pro Windows dělejte na Windows, build pro Linux na Linuxu.
 
@@ -163,7 +185,7 @@ git clone <url-tohoto-repozitáře> guestbook && cd guestbook
 cd API_Server
 npm install
 
-# závislosti aplikace
+# závislosti aplikace (vyžaduje přístup k registru Wacomu – viz Prerekvizity)
 cd ../App_ELek
 npm install
 
@@ -361,5 +383,3 @@ Ověřená sestava: Raspberry Pi s dotykovým displejem jako *jen kiosek*, serve
     ├── admin_panel.html       zdroj webové správy (server ji šifruje do admin.enc)
     └── admin_rotace.json      nastavení rotace adresy správy
 ```
-
-
