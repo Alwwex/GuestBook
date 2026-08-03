@@ -331,7 +331,7 @@ function spustServer() {
             ...process.env,
             ELECTRON_RUN_AS_NODE: '1',
             SERVER_ENV_PATH,
-            NODE_PATH: nodePath
+            NODE_PATH: nodePath,
             SIGNATURES_DIR: path.join(KONFIG_DIR, 'signatures')
         },
         stdio: ['ignore', 'pipe', 'pipe']
