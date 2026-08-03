@@ -1119,18 +1119,20 @@
             } catch (e) { alert('Podpis se nepodařilo načíst: ' + e.message); }
         }
 
-        async function stahniFss(typ, id) {
-            try {
-                const r = await fetch('/api/admin/fss-soubor/' + typ + '/' + id, { headers: { 'X-Admin-Token': TOKEN } });
-                if (!r.ok) { const err = await r.json().catch(() => ({})); throw new Error(err.error || 'HTTP ' + r.status); }
-                const blob = await r.blob();
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = 'podpis_' + typ + '_' + id + '.fss';
-                a.click();
-                URL.revokeObjectURL(a.href);
-            } catch (e) { alert('FSS se nepodařilo stáhnout: ' + e.message); }
-        }
+async function stahniFss(typ, id) {
+    try {
+        const r = await fetch('/api/admin/fss-soubor/' + typ + '/' + id, { headers: { 'X-Admin-Token': TOKEN } });
+        if (!r.ok) { const err = await r.json().catch(() => ({})); throw new Error(err.error || 'HTTP ' + r.status); }
+        const blob = await r.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'podpis_' + typ + '_' + id + '.fss';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+    } catch (e) { alert('FSS se nepodařilo stáhnout: ' + e.message); }
+}
 
         let dbStav = { tabulka: null, strana: 0, celkem: 0, naStranu: 20, pk: null, radky: [], sloupce: [] };
 
