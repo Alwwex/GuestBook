@@ -1665,13 +1665,20 @@
     }
 
     var pdfZoom = 100;
-    function zoomPokynu(smer) {
-        pdfZoom = smer === 0 ? 100 : Math.min(250, Math.max(100, pdfZoom + smer * 25));
+function zoomPokynu(smer) {
+        if (smer === 0) {
+            pdfZoom = 100;
+        } else {
+            pdfZoom = Math.min(300, Math.max(50, pdfZoom + smer * 25));
+        }
         aplikujPdfZoom();
     }
     window.zoomPokynu = zoomPokynu;
-    function aplikujPdfZoom() {
-        document.querySelectorAll('.rule-page.is-image img').forEach(img => { img.style.width = pdfZoom + '%'; });
+function aplikujPdfZoom() {
+        document.querySelectorAll('.rule-page.is-image img').forEach(img => { 
+            img.style.width = pdfZoom + '%'; 
+            img.style.maxWidth = 'none'; 
+        });
         const el = document.getElementById('rules-zoom-val');
         if (el) el.innerHTML = pdfZoom + '&nbsp;%';
     }
