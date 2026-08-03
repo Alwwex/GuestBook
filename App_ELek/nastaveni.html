@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Nastavení kiosku</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --blue:#00205B; --blue-2:#002a75; --red:#EE2737; --ink:#454142;
+    --paper:#F4F6F9; --line:#E3E8EF; --ok:#1f9d55; --muted:#6b7482;
+}
+* { box-sizing:border-box; }
+html, body { height:100%; }
+body { margin:0; font-family:'Funnel Display','Segoe UI',sans-serif; color:var(--ink); display:flex; flex-direction:column; height:100vh; overflow:hidden; background:var(--paper); }
+
+header {
+    height:56px; background:#fff; border-bottom:1px solid var(--line); flex-shrink:0;
+    display:flex; align-items:center; gap:14px; padding:0 18px; z-index:5;
+}
+header .znacka { display:flex; align-items:center; gap:10px; font-weight:700; color:var(--blue); font-size:17px; letter-spacing:.5px; }
+header .plus { display:inline-block; width:11px; height:11px; position:relative; flex-shrink:0; }
+header .plus::before { content:""; position:absolute; left:46%; top:0; width:8%; height:100%; background:linear-gradient(to bottom,var(--red) 0 38%,transparent 38% 62%,var(--red) 62% 100%); }
+header .plus::after { content:""; position:absolute; top:46%; left:0; height:8%; width:100%; background:linear-gradient(to right,var(--red) 0 38%,transparent 38% 62%,var(--red) 62% 100%); }
+header .znacka img { max-height:28px; max-width:100px; }
+header .mezera { flex:1; }
+header .stav-zmen { font-size:13px; color:var(--muted); }
+header .stav-zmen.dirty { color:#8a5a00; font-weight:600; }
+button { font-family:inherit; font-size:14px; font-weight:600; padding:10px 20px; border-radius:9px; border:none; cursor:pointer; transition:transform .12s, box-shadow .12s, background .15s, opacity .15s; }
+button:active { transform:translateY(1px); }
+.b-red { background:var(--red); color:#fff; box-shadow:0 6px 16px rgba(238,39,55,.25); }
+.b-red:disabled { background:#c8d0dc; box-shadow:none; cursor:default; }
+.b-blue { background:var(--blue); color:#fff; }
+.b-blue:hover { background:var(--blue-2); }
+.b-out { background:#fff; border:1.5px solid var(--line); color:var(--ink); }
+.b-out:hover { border-color:var(--blue); color:var(--blue); }
+.b-mini { padding:8px 13px; font-size:13px; }
+
+.telo { flex:1; display:flex; min-height:0; }
+
+aside {
+    width:348px; flex-shrink:0; background:#fff; border-right:1px solid var(--line);
+    display:flex; flex-direction:column; overflow-y:auto;
+}
+.sekce { border-bottom:1px solid var(--line); }
+.sekce-hlava {
+    display:flex; align-items:center; gap:12px; padding:15px 18px; cursor:pointer; user-select:none;
+    font-weight:600; font-size:14.5px; color:var(--ink); transition:background .12s;
+}
+.sekce-hlava:hover { background:#f7f9fc; }
+.sekce.otevrena .sekce-hlava { color:var(--blue); background:#f4f7fc; box-shadow:inset 3px 0 0 var(--red); }
+.sekce-hlava .ikona { width:24px; text-align:center; font-size:16px; color:#6b7482; flex-shrink:0; }
+.sekce.otevrena .sekce-hlava .ikona { color:var(--red); }
+.sekce-hlava .sipka { margin-left:auto; color:#a7b0bc; transition:transform .2s; font-size:12px; }
+.sekce.otevrena .sekce-hlava .sipka { transform:rotate(90deg); }
+.sekce-telo { display:none; padding:6px 18px 20px; }
+.sekce.otevrena .sekce-telo { display:block; animation:panelIn .22s ease; }
+@keyframes panelIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+
+label { display:block; font-size:12.5px; font-weight:600; margin:13px 0 5px; color:#5a6270; letter-spacing:.2px; }
+label .tip { font-weight:400; color:#96a0ad; }
+input[type=text], input[type=password] {
+    width:100%; padding:10px 12px; border:1.5px solid var(--line); border-radius:8px;
+    font-size:14px; font-family:inherit; background:#fbfcfe;
+}
+input:focus { outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(0,32,91,.10); background:#fff; }
+.radek { display:flex; gap:8px; align-items:center; }
+.radek input { flex:1; }
+
+.barvy-mriz { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.barva-pole { text-align:center; }
+.barva-pole input[type=color] { width:100%; height:42px; border:1px solid var(--line); border-radius:8px; padding:2px; background:#fff; cursor:pointer; }
+.barva-pole small { display:block; font-size:11px; color:var(--muted); margin-top:4px; }
+
+.logo-box {
+    height:66px; border:1.5px dashed var(--line); border-radius:9px; background:#fbfcfe;
+    display:flex; align-items:center; justify-content:center; overflow:hidden; padding:6px; margin-top:4px;
+}
+.logo-box img { max-width:100%; max-height:100%; }
+.logo-box small { color:#a7b0bc; font-size:12px; }
+
+.jazyky { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.jazyk {
+    border:2px solid var(--line); border-radius:10px; padding:10px 6px; text-align:center; cursor:pointer;
+    font-size:12.5px; font-weight:600; color:var(--muted); background:#fff; transition:border-color .15s;
+}
+.jazyk .vlajka { display:block; font-size:22px; margin-bottom:4px; }
+.jazyk:hover { border-color:var(--blue); }
+.jazyk.vybrany { border-color:var(--red); color:var(--blue); }
+
+.prepinac { display:flex; align-items:center; gap:10px; cursor:pointer; margin-top:12px; font-size:13.5px; }
+.prepinac input { width:42px; height:23px; appearance:none; background:#c8d0dc; border-radius:14px; position:relative; cursor:pointer; transition:background .15s; flex-shrink:0; }
+.prepinac input:checked { background:var(--ok); }
+.prepinac input::after { content:""; position:absolute; top:2px; left:2px; width:19px; height:19px; border-radius:50%; background:#fff; transition:left .15s; box-shadow:0 1px 3px rgba(0,0,0,.25); }
+.prepinac input:checked::after { left:21px; }
+
+.stav { margin-top:12px; padding:10px 12px; border-radius:8px; font-size:12.5px; display:none; line-height:1.45; }
+.stav.ok { display:block; background:#e7f7ef; color:#0e6b39; }
+.stav.chyba { display:block; background:#fdeaec; color:#a11624; }
+.stav.info { display:block; background:#eef2f8; color:#39496b; }
+.pozn { font-size:12px; color:#96a0ad; margin-top:8px; line-height:1.5; }
+.popis { font-size:12.5px; color:#7d8794; line-height:1.5; margin:2px 0 4px; }
+.tlacitka-sloupec { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+.tlacitka-sloupec button { width:100%; }
+
+.ai-karta {
+    margin-top:14px; padding:14px; border-radius:12px; color:#fff;
+    background:linear-gradient(135deg, #001743, var(--blue) 60%, #00337e);
+}
+.ai-karta b { display:block; font-size:14px; margin-bottom:4px; }
+.ai-karta p { margin:0 0 10px; font-size:12px; color:#b7c4dd; line-height:1.5; }
+.ai-karta input { border:none; background:#fff; }
+.ai-karta .radek button { background:var(--red); color:#fff; white-space:nowrap; }
+
+.palety { display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+.paleta {
+    display:flex; align-items:center; gap:11px; padding:11px 13px; border:2px solid var(--line);
+    border-radius:11px; cursor:pointer; background:#fff; transition:border-color .15s, transform .12s;
+}
+.paleta:hover { border-color:var(--blue); transform:translateX(2px); }
+.paleta.vybrana { border-color:var(--red); box-shadow:0 4px 14px rgba(238,39,55,.12); }
+.paleta .swatche { display:flex; }
+.paleta .sw { width:26px; height:26px; border-radius:50%; border:2.5px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.18); }
+.paleta .sw + .sw { margin-left:-9px; }
+.paleta b { font-size:13px; color:var(--ink); font-weight:600; }
+.paleta small { display:block; font-size:10.5px; color:#96a0ad; }
+.paleta .fajfka { margin-left:auto; color:var(--red); font-weight:800; visibility:hidden; }
+.paleta.vybrana .fajfka { visibility:visible; }
+details.ladeni { margin-top:14px; }
+details.ladeni summary { cursor:pointer; font-size:12.5px; font-weight:600; color:var(--blue); }
+
+.env-blok { display:flex; flex-direction:column; gap:6px; margin-top:4px; }
+.env-radek { display:flex; align-items:center; gap:8px; }
+.env-radek .env-klic {
+    width:132px; flex-shrink:0; font-family:Consolas, monospace; font-size:11px; color:#5a6270;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.env-radek input { flex:1; font-family:Consolas, monospace; font-size:12px; padding:7px 9px; }
+
+#nahled-db { background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:0 18px 46px rgba(0,32,91,.10); }
+.db-grid-hlava { display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--line); }
+.db-grid-hlava b { color:var(--blue); font-size:15px; }
+.db-grid-hlava span { font-size:12.5px; color:#6b7482; }
+.db-grid-obal { overflow:auto; max-height:calc(100vh - 240px); }
+table.db-grid { width:100%; border-collapse:collapse; font-size:12.5px; }
+.db-grid th { position:sticky; top:0; background:#f4f7fc; color:var(--blue); text-align:left; padding:9px 10px; border-bottom:2px solid var(--line); font-size:11.5px; letter-spacing:.4px; text-transform:uppercase; white-space:nowrap; }
+.db-grid td { padding:7px 10px; border-bottom:1px solid #eef1f6; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.db-grid tr:hover td { background:#f8fafd; }
+.db-grid td.editovatelna { cursor:text; }
+.db-grid td.editovatelna:hover { box-shadow:inset 0 0 0 1.5px var(--blue); border-radius:4px; }
+.db-grid td.dlouha { color:#a7b0bc; font-style:italic; }
+.db-grid td input { width:100%; border:1.5px solid var(--blue); border-radius:5px; padding:4px 6px; font:inherit; }
+.db-grid .smaz { color:var(--red); cursor:pointer; font-weight:700; padding:2px 8px; border-radius:6px; }
+.db-grid .smaz:hover { background:#fdeaec; }
+.db-tab-btn { text-align:left; }
+.db-tab-btn.aktivni { border-color:var(--red); color:var(--blue); font-weight:700; }
+.napoveda-odkaz { display:inline-flex; width:17px; height:17px; border-radius:50%; background:var(--blue); color:#fff; font-size:11px; font-weight:700; align-items:center; justify-content:center; cursor:pointer; vertical-align:middle; margin-left:6px; }
+.modal-pozadi { position:fixed; inset:0; background:rgba(10,20,45,.5); display:none; align-items:center; justify-content:center; z-index:50; }
+.modal-pozadi.zobrazit { display:flex; }
+.modal { background:#fff; border-radius:14px; max-width:520px; width:92%; padding:22px 24px; box-shadow:0 30px 80px rgba(0,0,0,.35); }
+.modal h3 { margin:0 0 10px; color:var(--blue); font-size:17px; }
+.modal p, .modal ol { font-size:13.5px; line-height:1.6; color:var(--ink); }
+.modal ol { padding-left:20px; margin:8px 0; }
+.modal .patka { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; }
+
+.nahled-plocha {
+    flex:1; min-width:0; overflow:auto; display:flex; align-items:center; justify-content:center; padding:34px;
+    background: radial-gradient(circle at 1px 1px, rgba(0,32,91,.07) 1px, transparent 0) 0 0/20px 20px, #e9edf3;
+}
+.nahled-blok { max-width:900px; width:100%; }
+.nahled-titulek { text-align:center; color:#7d8794; font-size:12px; letter-spacing:1.6px; text-transform:uppercase; margin-bottom:14px; font-weight:600; }
+
+.kiosk-prev {
+    --p:#00205B; --a:#EE2737; --bg:#f4f6f9;
+    border-radius:18px; overflow:hidden; background:var(--bg);
+    box-shadow:0 30px 70px rgba(0,32,91,.22), 0 0 0 10px #1c2733, 0 0 0 11px #0e141b;
+    user-select:none;
+}
+.kp-top { background:#fff; border-bottom:1px solid rgba(0,0,0,.06); padding:16px 26px; display:flex; justify-content:space-between; align-items:center; }
+.kp-logo { display:flex; align-items:center; gap:10px; font-weight:800; font-size:22px; color:var(--p); letter-spacing:.5px; min-height:36px; }
+.kp-logo img { max-height:36px; max-width:160px; }
+.kp-langs { display:flex; gap:6px; }
+.kp-langs span { border:1.5px solid var(--line); border-radius:8px; padding:6px 11px; font-weight:700; font-size:12px; color:#6b7482; background:#fff; cursor:pointer; }
+.kp-langs span.on { background:var(--p); border-color:var(--p); color:#fff; }
+.kp-hero { text-align:center; padding:44px 24px 10px; }
+.kp-hero b { display:block; font-size:38px; color:var(--p); letter-spacing:-.6px; }
+.kp-hero small { color:#6b7482; font-size:15px; }
+.kp-menu { display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; padding:30px 34px 40px; }
+.kp-btn { background:#fff; border:1.5px solid rgba(0,0,0,.08); border-radius:16px; padding:22px 18px; min-height:120px; transition:transform .15s, border-color .15s; }
+.kp-btn:hover { transform:translateY(-3px); border-color:var(--p); }
+.kp-btn b { display:block; color:var(--p); font-size:19px; margin-bottom:7px; }
+.kp-btn span { color:#6b7482; font-size:13px; line-height:1.45; display:block; }
+.kp-btn.leave { border-color:var(--a); }
+.kp-btn.leave b { color:var(--a); }
+
+.tablet-prev { display:flex; justify-content:center; }
+.tablet-ram {
+    background:#1c2733; border-radius:22px; padding:26px 30px 34px; box-shadow:0 30px 70px rgba(0,0,0,.35);
+    position:relative;
+}
+.tablet-ram::after { content:""; position:absolute; bottom:14px; left:50%; transform:translateX(-50%); width:52px; height:6px; border-radius:3px; background:#0e141b; }
+.tablet-ram canvas { display:block; width:480px; height:300px; border-radius:6px; background:#fff; image-rendering:pixelated; }
+</style>
+</head>
+<body>
+<div id="zamek" style="position:fixed; inset:0; background:linear-gradient(165deg,#001743,#00205b); display:none; align-items:center; justify-content:center; z-index:100;">
+    <div style="background:#fff; border-radius:16px; padding:34px 36px; width:380px; box-shadow:0 30px 80px rgba(0,0,0,.4); text-align:center;">
+        <div style="margin-bottom:12px;"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#00205B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1.4" fill="#EE2737" stroke="none"/></svg></div>
+        <h2 style="margin:0 0 6px; color:var(--blue); font-size:20px;">Nastavení GuestBook</h2>
+        <p style="margin:0 0 18px; color:#6b7482; font-size:13.5px;">Zadejte heslo do správy – chrání nastavení před nepovolanou úpravou.</p>
+        <input type="password" id="zamek-heslo" placeholder="Heslo správy" style="width:100%; padding:12px 14px; border:1.5px solid var(--line); border-radius:10px; font-size:15px; text-align:center;" onkeydown="if(event.key==='Enter')odemkni()">
+        <div id="zamek-chyba" style="color:var(--red); font-size:12.5px; margin-top:8px; min-height:16px;"></div>
+        <button class="b-red" style="width:100%; margin-top:10px; padding:12px;" onclick="odemkni()">Odemknout</button>
+    </div>
+</div>
+<header>
+    <div class="znacka"><img id="hlava-logo" alt="" style="display:none;"><span id="hlava-firma">Nastavení kiosku</span><span class="plus"></span></div>
+    <div class="mezera"></div>
+    <span class="stav-zmen" id="stav-zmen">Vše uloženo</span>
+    <button class="b-out b-mini" onclick="nactiVse()">Zahodit změny</button>
+    <button class="b-red" id="btn-ulozit" onclick="ulozit()" disabled>Uložit a použít</button>
+</header>
+
+<div class="telo">
+<aside id="panel"></aside>
+
+<div class="nahled-plocha">
+    <div class="nahled-blok">
+        <div class="nahled-titulek" id="nahled-titulek">Živý náhled kiosku</div>
+
+        <div id="nahled-kiosek" class="kiosk-prev">
+            <div class="kp-top">
+                <div class="kp-logo" id="kp-logo"></div>
+                <div class="kp-langs" id="kp-langs">
+                    <span data-l="cs" onclick="nahledJazyk('cs')">CZ</span>
+                    <span data-l="en" onclick="nahledJazyk('en')">EN</span>
+                    <span data-l="de" onclick="nahledJazyk('de')">DE</span>
+                </div>
+            </div>
+            <div class="kp-hero"><b id="kp-title"></b><small id="kp-sub"></small></div>
+            <div class="kp-menu">
+                <div class="kp-btn"><b id="kp-b1"></b><span id="kp-s1"></span></div>
+                <div class="kp-btn"><b id="kp-b2"></b><span id="kp-s2"></span></div>
+                <div class="kp-btn leave"><b id="kp-b3"></b><span id="kp-s3"></span></div>
+            </div>
+        </div>
+
+        <div id="nahled-tablet" class="tablet-prev" style="display:none;">
+            <div class="tablet-ram"><canvas id="pad-canvas" width="320" height="200"></canvas></div>
+        </div>
+
+
+    </div>
+</div>
+</div>
+
+<script>
+const { ipcRenderer } = require('electron');
+
+const n = {
+    companyName: '', primarni: '#00205B', akcent: '#EE2737', pozadi: '#f4f6f9', text: '#454142',
+    font: null, logo: null, zdroj: '',
+    tabletObrazek: null, tabletText1: 'Crafted to Perfection', tabletText2: 'Vyčkejte prosím na pokyn k podpisu',
+    jazyk: 'cs', adminPin: '', autostart: true,
+    spravaZapnuta: true, noveHeslo: '', adminPovoleneIp: '', sshCil: '', rezim: ''
+};
+let logoNahled = null, tabletNahled = null;
+let nahledJazykAktualni = 'cs';
+let puvodni = {};
+let dirty = false;
+let aiPalety = [];
+let envAplikace = {}, envServer = {};
+let envAplikacePuvodni = {}, envServerPuvodni = {};
+
+const ENV_KLICE_APLIKACE = ['PORT', 'API_HOST', 'API_KEY', 'WACOM_LICENCE_KEY', 'WACOM_LICENCE_SECRET', 'ADMIN_PIN', 'SPUSTIT_SERVER', 'SPUSTIT_DB', 'LANG', 'COMPANY_NAME', 'SSH_CIL', 'REZIM'];
+const ENV_KLICE_SERVER = ['PORT', 'HOST', 'API_KEY', 'FSS_ENCRYPTION_KEY', 'DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'ADMIN_PATH', 'ADMIN_ENABLED', 'ADMIN_HESLO', 'ADMIN_POVOLENE_IP', 'DISCORD_WEBHOOK_URL'];
+
+const KURATOVANE = [
+    { nazev: 'Modrá klasika',   primarni: '#00205b', akcent: '#ee2737', pozadi: '#f4f6f9', text: '#454142' },
+    { nazev: 'Lesní',           primarni: '#1b4d3e', akcent: '#d98e2b', pozadi: '#f5f7f4', text: '#454142' },
+    { nazev: 'Antracit',        primarni: '#23272e', akcent: '#e05a3a', pozadi: '#f5f5f6', text: '#454142' }
+];
+
+function jeVlastniPaleta() {
+    const klic = n.primarni + n.akcent;
+    return ![...aiPalety, ...KURATOVANE].some(p => p.primarni + p.akcent === klic);
+}
+
+function pouzijPaletu(i) {
+    const p = [...aiPalety, ...KURATOVANE][i];
+    if (!p) return;
+    n.primarni = p.primarni; n.akcent = p.akcent; n.pozadi = p.pozadi; n.text = p.text;
+    if (p.font) { n.font = p.font; nactiWebFont(p.font); }
+    nastavDirty(true);
+    vykresliPanel();
+    if (otevrenaSekce === 'tablet') obnovPadNahled();
+}
+
+const NAHLED_TEXTY = {
+    cs: { sub: 'Vyberte prosím, co vás k nám přivádí.', b1: 'Jsem tu poprvé', s1: 'Vyplníte krátký formulář, projdete si pokyny a podepíšete se.', b2: 'Už jsem u vás byl(a)', s2: 'Stačí napsat jméno a potvrdit příchod podpisem.', b3: 'Odcházím', s3: 'Odhlaste se před opuštěním budovy.', vitejte: 'Vítejte v' },
+    en: { sub: 'Please choose what brings you to us.', b1: 'First visit', s1: 'Fill in a short form, read the safety rules and sign.', b2: 'I\u2019ve been here before', s2: 'Type your name and confirm arrival with a signature.', b3: 'Leaving', s3: 'Sign out before leaving the building.', vitejte: 'Welcome to' },
+    de: { sub: 'Bitte wählen Sie, was Sie zu uns führt.', b1: 'Zum ersten Mal hier', s1: 'Kurzes Formular, Sicherheitshinweise und Unterschrift.', b2: 'Ich war schon hier', s2: 'Name eingeben und Ankunft mit Unterschrift bestätigen.', b3: 'Ich gehe', s3: 'Melden Sie sich vor dem Verlassen ab.', vitejte: 'Willkommen bei' }
+};
+
+const SEKCE = [
+    { id: 'znacka', ikona: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="display:block; margin:0 auto;"><path d="M20.6 13.4 12 22 2 12V4a2 2 0 0 1 2-2h8l8.6 8.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.6"/></svg>`, nazev: 'Značka a logo' },
+    { id: 'vzhled', ikona: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="display:block; margin:0 auto;"><path d="M12 2a10 10 0 1 0 0 20c1.2 0 2-.9 2-2 0-.6-.2-1-.6-1.4-.4-.4-.6-.9-.6-1.4 0-1.1.9-2 2-2h2.4A4.8 4.8 0 0 0 22 10.4C22 5.7 17.5 2 12 2Z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16.5" cy="10.5" r="1"/></svg>`, nazev: 'Barvy a písmo' },
+    { id: 'jazyk', ikona: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="display:block; margin:0 auto;"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10Z"/></svg>`, nazev: 'Jazyk obrazovky' },
+    { id: 'tablet', ikona: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="display:block; margin:0 auto;"><path d="M17 3a2.8 2.8 0 1 1 4 4L8 20l-5 1 1-5Z"/></svg>`, nazev: 'Podpisový tablet' },
+    { id: 'sprava', ikona: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="display:block; margin:0 auto;"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`, nazev: 'Správa a přístup' },
+    { id: 'system', ikona: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="display:block; margin:0 auto;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06A2 2 0 1 1 7.07 4.2l.06.06a1.7 1.7 0 0 0 1.87.34h0a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55h0a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v0a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1Z"/></svg>`, nazev: 'Systém' },
+    { id: 'pokrocile', ikona: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="display:block; margin:0 auto;"><path d="M14.7 6.3a4.6 4.6 0 0 0-6 6L3 18a2.1 2.1 0 0 0 3 3l5.7-5.7a4.6 4.6 0 0 0 6-6l-3 3-2.6-.4-.4-2.6Z"/></svg>`, nazev: 'Pro pokročilé' }
+];
+function jeServer() { return n.rezim === 'server'; }
+function ukazatSsh() { return n.rezim === 'kiosek' || (!n.rezim && (envAplikace.SPUSTIT_SERVER || '') !== '1'); }
+function sekceProRoli() { return SEKCE; }
+
+let otevrenaSekce = 'znacka';
+
+function vykresliPanel() {
+    document.getElementById('panel').innerHTML = sekceProRoli().map(s => `
+        <div class="sekce ${otevrenaSekce === s.id ? 'otevrena' : ''}" id="sekce-${s.id}">
+            <div class="sekce-hlava" onclick="prepniSekci('${s.id}')">
+                <span class="ikona">${s.ikona}</span>${s.nazev}<span class="sipka">▶</span>
+            </div>
+            <div class="sekce-telo">${teloSekce(s.id)}</div>
+        </div>`).join('');
+    obnovNahled();
+}
+
+function prepniSekci(id) {
+    ulozPole();
+    otevrenaSekce = (otevrenaSekce === id) ? null : id;
+    vykresliPanel();
+    prepniNahled();
+}
+
+function prepniNahled() {
+    const tablet = otevrenaSekce === 'tablet';
+    document.getElementById('nahled-kiosek').style.display = tablet ? 'none' : 'block';
+    document.getElementById('nahled-tablet').style.display = tablet ? 'flex' : 'none';
+    document.getElementById('nahled-titulek').innerText = tablet ? 'Živý náhled displeje tabletu' : 'Živý náhled kiosku';
+    if (tablet) obnovPadNahled();
+}
+
+async function sshKrok(krok) {
+    const el = document.getElementById('ssh-stav');
+    const hlas = (t, text) => { el.className = 'stav ' + t; el.innerHTML = text; };
+    const cil = (document.getElementById('p-ssh') || {}).value || '';
+    try {
+        if (krok === 'instaluj') {
+            hlas('info', 'Kontroluji SSH klienta…');
+            const st = await ipcRenderer.invoke('ssh-stav');
+            if (st.klient) { hlas('ok', 'SSH klient je připravený – pokračujte krokem 2.'); return; }
+            const start = Date.now();
+            const tik = setInterval(() => {
+                const s = Math.round((Date.now() - start) / 1000);
+                hlas('info', '<b>Windows zapíná OpenSSH…</b> běží ' + s + ' s (obvykle do minuty, nejvýš pár minut).<br>Pokud vyskočilo okno „Chcete této aplikaci povolit provádět změny?", potvrďte <b>Ano</b> – práva správce se povolují tady, aplikace se kvůli nim nerestartuje.');
+            }, 1000);
+            hlas('info', '<b>Windows zapíná OpenSSH…</b><br>Za chvíli vyskočí okno „Chcete této aplikaci povolit provádět změny?" – potvrďte <b>Ano</b>.');
+            try {
+                await ipcRenderer.invoke('ssh-instaluj');
+            } finally { clearInterval(tik); }
+            hlas('ok', 'SSH klient nainstalován – pokračujte krokem 2.');
+        } else if (krok === 'klic') {
+            hlas('info', 'Vytvářím přihlašovací klíč…');
+            await ipcRenderer.invoke('ssh-klic-vytvor');
+            hlas('ok', 'Klíč připraven. Krokem 3 ho nahrajete na server.');
+        } else if (krok === 'nahraj') {
+            if (!cil.trim()) { hlas('chyba', 'Nejdřív vyplňte adresu serveru, např. pi@192.168.0.50.'); return; }
+            await ipcRenderer.invoke('ssh-klic-nahraj', cil.trim());
+            hlas('info', 'Otevřelo se okno terminálu – <b>zadejte v něm heslo účtu na serveru</b>. Pak okno zavřete a klikněte na 4. Otestovat.');
+        } else if (krok === 'test') {
+            if (!cil.trim()) { hlas('chyba', 'Nejdřív vyplňte adresu serveru.'); return; }
+            hlas('info', 'Zkouším připojení…');
+            const v = await ipcRenderer.invoke('ssh-test', cil.trim());
+            hlas(v.ok ? 'ok' : 'chyba', v.zprava);
+        }
+    } catch (e) { hlas('chyba', e.message); }
+}
+
+function prepniHeslo(btn) {
+    const inp = document.getElementById('p-heslo');
+    if (!inp) return;
+    const skryte = inp.type === 'password';
+    inp.type = skryte ? 'text' : 'password';
+    btn.innerText = skryte ? 'Skrýt' : 'Zobrazit';
+}
+
+
+const NAPOVEDY = {
+    discord: {
+        titulek: 'Jak získat Discord webhook (hlášení o provozu)',
+        telo: `<p>Webhook je adresa kanálu, kam GuestBook posílá hlášení – výpadky, adresu správy a podobně.</p>
+            <ol>
+                <li>V Discordu otevřete svůj server a kanál, kam mají zprávy chodit.</li>
+                <li><b>Nastavení kanálu → Integrace → Webhooky → Nový webhook</b>.</li>
+                <li>Klikněte na <b>„Kopírovat URL webhooku"</b> a vložte ji sem.</li>
+            </ol>`,
+        odkaz: 'https://support.discord.com/hc/articles/228383668', odkazText: 'Návod na webu Discordu'
+    },
+    ssh: {
+        titulek: 'Vzdálený přístup na server (SSH)',
+        telo: `<p>Tohle potřebujete <b>jen když server s databází běží na jiném počítači</b> – typicky na Raspberry Pi nebo linuxovém serveru. Když všechno běží na tomhle počítači, nechte pole prázdné.</p>
+            <p><b>Co zadat:</b> uživatelské jméno a adresu toho serveru, např. <code>pi@192.168.0.50</code>. Když SSH poslouchá na jiném portu, přidejte ho: <code>pi@192.168.0.50:2222</code>.</p>
+            <p><b>Odkud vzít heslo:</b> žádné heslo sem nezadáváte. Tlačítko „3. Nahrát na server" otevře okno terminálu a v něm jednou zadáte heslo účtu na tom serveru – to, kterým se na něj běžně přihlašujete (od správce serveru, nebo jste si ho nastavili při instalaci Raspberry Pi). GuestBook si tím na server nahraje svůj přihlašovací klíč a od té chvíle se připojuje sám, bez hesla. Heslo se nikam neukládá.</p>`
+    },
+    ip: {
+        titulek: 'Omezení správy na konkrétní počítače',
+        telo: `<p>Když sem napíšete IP adresy, webová správa půjde otevřít jen z nich – z ostatních počítačů se bude tvářit, že neexistuje.</p>
+            <ol>
+                <li>Jednu nebo víc adres oddělte čárkou: <b>192.168.0.10, 192.168.0.11</b></li>
+                <li>Hvězdička zastupuje celý rozsah: <b>192.168.0.*</b> = celá síť.</li>
+                <li>Prázdné pole = správa je dostupná odkudkoli (jen po heslu).</li>
+            </ol>
+            <p>Tento počítač (localhost) má přístup vždy.</p>`
+    },
+    apiklic: {
+        titulek: 'Co je API klíč serveru',
+        telo: `<p>API klíč je heslo, kterým se kiosek prokazuje serveru. Vygeneroval se automaticky při instalaci.</p>
+            <p>Najdete ho v <b>Pro pokročilé → API_KEY</b> (musí být stejný v aplikaci i na serveru – GuestBook si ho hlídá sám). Na další kiosek ho přenesete párovacím kódem v průvodci instalací.</p>`
+    }
+};
+
+function ukazNapovedu(id) {
+    const n = NAPOVEDY[id];
+    if (!n) return;
+    document.getElementById('modal-titulek').innerText = n.titulek;
+    document.getElementById('modal-telo').innerHTML = n.telo;
+    const odkazBtn = document.getElementById('modal-odkaz');
+    if (n.odkaz) {
+        odkazBtn.style.display = 'inline-block';
+        odkazBtn.innerText = n.odkazText || 'Otevřít návod';
+        odkazBtn.onclick = () => ipcRenderer.invoke('otevri-odkaz', n.odkaz);
+    } else odkazBtn.style.display = 'none';
+    document.getElementById('modal-pozadi').classList.add('zobrazit');
+}
+function zavriNapovedu() { document.getElementById('modal-pozadi').classList.remove('zobrazit'); }
+
+function teloSekce(id) {
+    if (id === 'znacka') return `
+        <div class="popis">Základ vizitky vaší firmy na obrazovce.</div>
+        <label>Název firmy</label>
+        <input type="text" id="p-firma" value="${n.companyName || ''}" placeholder="Např. Novák a syn s.r.o." oninput="zmena()">
+        <label>Logo</label>
+        <div class="logo-box" id="p-logo-box">${logoNahled ? `<img src="${logoNahled}">` : '<small>zatím bez loga</small>'}</div>
+        <div class="tlacitka-sloupec">
+            <button class="b-out b-mini" onclick="vyberLogo()">Vybrat logo z počítače…</button>
+        </div>
+        <div class="ai-karta">
+            <b><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px; margin-right:6px;"><path d="M12 2l1.9 5.7L19.6 9.6l-5.7 1.9L12 17.2l-1.9-5.7L4.4 9.6l5.7-1.9Z"/><path d="M19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9Z"/></svg>Nechte to na nás</b>
+            <p>Zadejte web vaší firmy – stáhneme logo a připravíme několik návrhů barev a písma. Pak si jen vyberete.</p>
+            <div class="radek">
+                <input type="text" id="p-web" placeholder="www.vase-firma.cz" value="${n.zdroj || ''}">
+                <button class="b-mini" onclick="vzhledZWebu()">Navrhnout</button>
+            </div>
+        </div>
+        <div class="stav" id="p-web-stav"></div>`;
+
+    if (id === 'vzhled') {
+        const vsechny = [...aiPalety, ...KURATOVANE];
+        const aktivniKlic = n.primarni + n.akcent;
+        const karty = vsechny.map((p, i) => `
+            <div class="paleta ${p.primarni + p.akcent === aktivniKlic ? 'vybrana' : ''}" onclick="pouzijPaletu(${i})">
+                <span class="swatche">
+                    <span class="sw" style="background:${p.primarni}"></span>
+                    <span class="sw" style="background:${p.akcent}"></span>
+                    <span class="sw" style="background:${p.pozadi}; border-color:#e3e8ef;"></span>
+                </span>
+                <span><b>${p.nazev}</b>${p.ai ? '<small>návrh podle vašeho loga</small>' : ''}</span>
+                <span class="fajfka">✓</span>
+            </div>`).join('');
+        return `
+        <div class="popis">Vyberte barevnou kombinaci – náhled vpravo se hned přebarví.${aiPalety.length ? '' : ' Návrhy na míru získáte v sekci Značka a logo tlačítkem Navrhnout.'}</div>
+        <div class="palety">${karty}</div>
+        <details class="ladeni" ${jeVlastniPaleta() ? 'open' : ''}>
+            <summary>Doladit ručně (pro zkušenější)</summary>
+            <div class="barvy-mriz" style="margin-top:10px;">
+                <div class="barva-pole"><input type="color" id="p-primarni" value="${n.primarni}" oninput="zmena()"><small>Hlavní</small></div>
+                <div class="barva-pole"><input type="color" id="p-akcent" value="${n.akcent}" oninput="zmena()"><small>Zvýraznění</small></div>
+                <div class="barva-pole"><input type="color" id="p-pozadi" value="${n.pozadi}" oninput="zmena()"><small>Pozadí</small></div>
+            </div>
+            <label>Písmo <span class="tip">– nechte prázdné pro standardní</span></label>
+            <input type="text" id="p-font" value="${n.font || ''}" placeholder="Standardní (Segoe UI)" oninput="zmena()">
+        </details>`;
+    }
+
+    if (id === 'jazyk') return `
+        <div class="popis">V jakém jazyce se obrazovka zobrazí návštěvě jako první.</div>
+        <div class="jazyky">
+            <div class="jazyk ${n.jazyk === 'cs' ? 'vybrany' : ''}" onclick="vyberJazyk('cs')"><span class="vlajka">🇨🇿</span>Čeština</div>
+            <div class="jazyk ${n.jazyk === 'en' ? 'vybrany' : ''}" onclick="vyberJazyk('en')"><span class="vlajka">🇬🇧</span>English</div>
+            <div class="jazyk ${n.jazyk === 'de' ? 'vybrany' : ''}" onclick="vyberJazyk('de')"><span class="vlajka">🇩🇪</span>Deutsch</div>
+        </div>
+        <div class="pozn">Návštěvník si může na obrazovce kdykoli přepnout kterýkoli ze tří jazyků – vyzkoušejte to i v náhledu vpravo.</div>`;
+
+    if (id === 'tablet') return `
+        <div class="popis">Co uvidí návštěva na malém displeji podpisového tabletu, když se zrovna nepodepisuje.</div>
+        <label>Obrázek na displeji</label>
+        <div class="logo-box" id="p-pad-box">${tabletNahled ? `<img src="${tabletNahled}">` : '<small>použije se logo firmy</small>'}</div>
+        <div class="tlacitka-sloupec">
+            <button class="b-out b-mini" onclick="vyberPadObrazek()">Vybrat obrázek…</button>
+            <button class="b-out b-mini" onclick="zrusPadObrazek()" ${n.tabletObrazek ? '' : 'disabled'}>Vrátit logo firmy</button>
+        </div>
+        <label>Horní text <span class="tip">– u vlastního obrázku se nezobrazuje</span></label>
+        <input type="text" maxlength="60" id="p-pad-text1" value="${n.tabletText1 || ''}" oninput="zmena()">
+        <label>Spodní text</label>
+        <input type="text" maxlength="60" id="p-pad-text2" value="${n.tabletText2 || ''}" oninput="zmena()">
+        <div class="tlacitka-sloupec">
+            <button class="b-blue b-mini" onclick="padTest()">Vyzkoušet na připojeném tabletu</button>
+        </div>
+        <div class="stav" id="p-pad-stav"></div>`;
+
+    if (id === 'sprava') return `
+        <div class="popis">Webová správa je přehled návštěv a dat pro recepční – databázi teď najdete přímo v ní (záložka Databáze). Otevřete ji tlačítkem, nebo z telefonu.</div>
+        <label>Nové heslo do správy <span class="tip">– nechte prázdné, když ho nechcete měnit</span></label>
+        <div class="radek">
+            <input type="password" id="p-heslo" value="" placeholder="••••••••" oninput="zmena()">
+            <button class="b-out b-mini" onclick="prepniHeslo(this)" type="button">Zobrazit</button>
+        </div>
+        <label class="prepinac"><input type="checkbox" id="p-sprava-zap" ${n.spravaZapnuta ? 'checked' : ''} onchange="zmena()"> Webová správa zapnutá</label>
+
+        <label style="margin-top:18px;">Povolené počítače (IP) <span class="tip">– správu otevřou jen tyto adresy</span> <span class="napoveda-odkaz" onclick="ukazNapovedu('ip')">?</span></label>
+        <input type="text" id="p-ip" value="${(n.adminPovoleneIp || '').replace(/"/g, '&quot;')}" placeholder="prázdné = odkudkoli, např. 192.168.0.10, 192.168.0.*" oninput="zmena()">
+
+        <div class="tlacitka-sloupec">
+            <button class="b-out b-mini" onclick="ipcRenderer.invoke('otevri-spravu')">Otevřít správu</button>
+        </div>
+        <div class="pozn">Nové heslo i seznam počítačů začnou platit po uložení (server se krátce restartuje). Localhost (tento počítač) má přístup vždy. Adresa správy se z bezpečnostních důvodů pravidelně mění – aktuální chodí na Discord.</div>`;
+
+    if (id === 'system') return `
+        <div class="popis">Věci kolem chodu aplikace. Sem běžně nemusíte.</div>
+        ${jeServer() ? '' : `
+        <label>PIN skrytého menu kiosku <span class="tip">(5× ťuknutí na logo)</span></label>
+        <input type="text" id="p-pin" value="${n.adminPin || ''}" oninput="zmena()">`}
+        <label class="prepinac"><input type="checkbox" id="p-autostart" ${n.autostart ? 'checked' : ''} onchange="zmena()"> Spouštět aplikaci po startu počítače</label>
+        ${ukazatSsh() ? `
+        <label style="margin-top:18px;">Vzdálený přístup na server <span class="tip">– terminálem na počítač, kde běží server</span> <span class="napoveda-odkaz" onclick="ukazNapovedu('ssh')">?</span></label>
+        <input type="text" id="p-ssh" value="${(n.sshCil || '').replace(/"/g, '&quot;')}" placeholder="uzivatel@192.168.0.50" oninput="zmena()">
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+            <button class="b-out b-mini" onclick="sshKrok('instaluj')">1. SSH</button>
+            <button class="b-out b-mini" onclick="sshKrok('klic')">2. Klíč</button>
+            <button class="b-blue b-mini" onclick="sshKrok('nahraj')">3. Nahrát na server</button>
+            <button class="b-out b-mini" onclick="sshKrok('test')">4. Otestovat</button>
+        </div>
+        <div class="stav" id="ssh-stav"></div>` : ''}
+        <div class="tlacitka-sloupec">
+            <button class="b-out b-mini" onclick="ipcRenderer.invoke('otevri-terminal')">Otevřít terminál${ukazatSsh() && n.sshCil ? ' (připojí se na server)' : ''}</button>
+            <button class="b-out b-mini" onclick="ipcRenderer.invoke('restart-aplikace')">Restartovat aplikaci</button>
+        </div>
+        <div class="pozn">${ukazatSsh() ? 'Heslo do GuestBooku nezadáváte – v kroku 3 ho jednou zadáte přímo v okně terminálu (heslo účtu na serveru) a GuestBook si tam nahraje svůj klíč. Potom se připojuje sám. Prázdná adresa = terminál otevře běžnou příkazovou řádku tady. ' : ''}Instalaci lze projet znovu příkazem <code>GuestBook.exe --pruvodce</code>.</div>`;
+
+    if (id === 'pokrocile') {
+        const radekEnv = (soubor, klic, hodnota) => `
+            <div class="env-radek">
+                <span class="env-klic" title="${klic}">${klic}</span>
+                <input type="text" data-env="${soubor}" data-klic="${klic}" value="${String(hodnota).replace(/"/g, '&quot;')}" oninput="zmena()" spellcheck="false">
+            </div>`;
+        const blok = (soubor, data) => Object.keys(data).sort().map(k => radekEnv(soubor, k, data[k])).join('');
+        return `
+        <div class="popis">Kompletní konfigurace, jak leží v souborech. Nápovědy: Discord <span class="napoveda-odkaz" onclick="ukazNapovedu('discord')">?</span> API klíč <span class="napoveda-odkaz" onclick="ukazNapovedu('apiklic')">?</span><br> Měňte jen, když víte, co děláte – po uložení se změny serveru projeví restartem serveru.</div>
+        <label style="margin-top:14px;">Aplikace <span class="tip">(app.env)</span></label>
+        <div class="env-blok">${blok('aplikace', envAplikace)}</div>
+        <label style="margin-top:16px;">Server <span class="tip">(server.env)</span></label>
+        <div class="env-blok">${blok('server', envServer)}</div>
+        <div class="pozn">Cesta ke konfiguraci: složka aplikace v %APPDATA%. Klíče API_KEY a FSS_ENCRYPTION_KEY neměňte, pokud nevíte proč – FSS klíč šifruje uložené podpisy.</div>`;
+    }
+
+    return '';
+}
+
+function ulozPole() {
+    const g = id => document.getElementById(id);
+    if (g('p-firma')) { n.companyName = g('p-firma').value.trim(); n.zdroj = g('p-web').value.trim(); }
+    if (g('p-primarni')) {
+        n.primarni = g('p-primarni').value; n.akcent = g('p-akcent').value; n.pozadi = g('p-pozadi').value;
+        n.font = g('p-font').value.trim() || null;
+    }
+    if (g('p-pad-text1')) { n.tabletText1 = g('p-pad-text1').value; n.tabletText2 = g('p-pad-text2').value; }
+    if (g('p-heslo')) { n.noveHeslo = g('p-heslo').value; n.spravaZapnuta = g('p-sprava-zap').checked; n.adminPovoleneIp = g('p-ip').value.trim(); }
+    if (g('p-pin')) n.adminPin = g('p-pin').value.trim();
+    if (g('p-autostart')) n.autostart = g('p-autostart').checked;
+    if (g('p-ssh')) n.sshCil = g('p-ssh').value.trim();
+    document.querySelectorAll('[data-env]').forEach(inp => {
+        const cil = inp.getAttribute('data-env') === 'aplikace' ? envAplikace : envServer;
+        cil[inp.getAttribute('data-klic')] = inp.value;
+    });
+}
+
+function zmena() {
+    ulozPole();
+    if (n.font) nactiWebFont(n.font);
+    nastavDirty(true);
+    obnovNahled();
+    if (otevrenaSekce === 'tablet') obnovPadNahled();
+}
+
+function nastavDirty(d) {
+    dirty = d;
+    document.getElementById('btn-ulozit').disabled = !d;
+    const s = document.getElementById('stav-zmen');
+    s.innerText = d ? 'Neuložené změny' : 'Vše uloženo';
+    s.classList.toggle('dirty', d);
+}
+
+const nactenaPisma = new Set();
+function nactiWebFont(nazev) {
+    nazev = String(nazev || '').trim();
+    if (!nazev || nactenaPisma.has(nazev) || !/^[A-Za-z0-9][A-Za-z0-9 \-]{1,38}$/.test(nazev)) return;
+    nactenaPisma.add(nazev);
+    const l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(nazev).replace(/%20/g, '+') + ':wght@400;600;700;800&display=swap';
+    document.head.appendChild(l);
+}
+
+function nahledJazyk(l) { nahledJazykAktualni = l; obnovNahled(); }
+
+function obnovNahled() {
+    const el = document.getElementById('nahled-kiosek');
+    el.style.setProperty('--p', n.primarni);
+    el.style.setProperty('--a', n.akcent);
+    el.style.setProperty('--bg', n.pozadi);
+    el.style.fontFamily = n.font ? `'${n.font}', 'Segoe UI', sans-serif` : '';
+    const firma = n.companyName || 'Vaše firma';
+    const t = NAHLED_TEXTY[nahledJazykAktualni] || NAHLED_TEXTY.cs;
+    const g = id => document.getElementById(id);
+    g('kp-title').innerText = `${t.vitejte} ${firma}`;
+    g('kp-sub').innerText = t.sub;
+    g('kp-b1').innerText = t.b1; g('kp-s1').innerText = t.s1;
+    g('kp-b2').innerText = t.b2; g('kp-s2').innerText = t.s2;
+    g('kp-b3').innerText = t.b3; g('kp-s3').innerText = t.s3;
+    document.querySelectorAll('#kp-langs span').forEach(s => s.classList.toggle('on', s.getAttribute('data-l') === nahledJazykAktualni));
+    g('kp-logo').innerHTML = logoNahled ? `<img src="${logoNahled}">` : firma.toUpperCase();
+    g('hlava-firma').innerText = jeServer() ? 'Nastavení serveru' : (firma !== 'Vaše firma' ? `Nastavení – ${firma}` : 'Nastavení kiosku');
+    const hl = g('hlava-logo');
+    if (logoNahled) { hl.src = logoNahled; hl.style.display = 'block'; } else hl.style.display = 'none';
+}
+
+function nactiObrazek(dataUrl) {
+    return new Promise(resolve => {
+        if (!dataUrl) return resolve(null);
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = dataUrl;
+    });
+}
+
+async function kresliPadKompozice(W, H) {
+    const off = document.createElement('canvas');
+    off.width = W; off.height = H;
+    const c = off.getContext('2d');
+    c.fillStyle = '#FFFFFF'; c.fillRect(0, 0, W, H);
+
+    const napis = (text, vaha, velikost, y) => {
+        if (!text) return;
+        c.fillStyle = '#000000';
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        const sirkaPri = px => { c.font = `${vaha} ${px}px Arial, sans-serif`; return c.measureText(text).width; };
+        let px = velikost;
+        while (px > Math.max(11, velikost * 0.7) && sirkaPri(px) > W * 0.94) px--;
+        if (sirkaPri(px) <= W * 0.94) { c.fillText(text, W / 2, y); return; }
+        const slova = text.split(' ');
+        let radek1 = text, radek2 = '';
+        if (slova.length > 1) {
+            let nejlepsi = 1, rozdil = Infinity;
+            for (let i = 1; i < slova.length; i++) {
+                const a = slova.slice(0, i).join(' ').length, b = slova.slice(i).join(' ').length;
+                if (Math.abs(a - b) < rozdil) { rozdil = Math.abs(a - b); nejlepsi = i; }
+            }
+            radek1 = slova.slice(0, nejlepsi).join(' ');
+            radek2 = slova.slice(nejlepsi).join(' ');
+        }
+        px = velikost;
+        const nejsirsi = pxx => { c.font = `${vaha} ${pxx}px Arial, sans-serif`; return Math.max(c.measureText(radek1).width, c.measureText(radek2).width); };
+        while (px > 10 && nejsirsi(px) > W * 0.94) px--;
+        c.font = `${vaha} ${px}px Arial, sans-serif`;
+        c.fillText(radek1, W / 2, y - px * 0.62);
+        if (radek2) c.fillText(radek2, W / 2, y + px * 0.62);
+    };
+
+    const vlastni = await nactiObrazek(tabletNahled);
+    const logo = !vlastni ? await nactiObrazek(logoNahled) : null;
+
+    if (vlastni) {
+        const scale = Math.min(W * 0.94 / vlastni.width, H * 0.72 / vlastni.height);
+        const lw = Math.max(1, Math.round(vlastni.width * scale));
+        const lh = Math.max(1, Math.round(vlastni.height * scale));
+        c.drawImage(vlastni, Math.round((W - lw) / 2), Math.round(H * 0.40 - lh / 2), lw, lh);
+        napis(n.tabletText2, 700, Math.floor(H * 0.075), H * 0.88);
+    } else if (logo) {
+        const scale = Math.min(W * 0.86 / logo.width, H * 0.46 / logo.height);
+        const lw = Math.max(1, Math.round(logo.width * scale));
+        const lh = Math.max(1, Math.round(logo.height * scale));
+        c.drawImage(logo, Math.round((W - lw) / 2), Math.round(H * 0.28 - lh / 2), lw, lh);
+        napis(n.tabletText1, 700, Math.floor(H * 0.085), H * 0.62);
+        napis(n.tabletText2, 700, Math.floor(H * 0.075), H * 0.85);
+    } else {
+        c.fillStyle = '#000000';
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.font = `800 ${Math.floor(H * 0.24)}px Arial, sans-serif`;
+        c.fillText(n.companyName || 'GuestBook', W / 2, H * 0.30);
+        napis(n.tabletText1, 700, Math.floor(H * 0.085), H * 0.56);
+        napis(n.tabletText2, 700, Math.floor(H * 0.075), H * 0.84);
+    }
+
+    const data = c.getImageData(0, 0, W, H);
+    for (let i = 0; i < data.data.length; i += 4) {
+        const jas = 0.299 * data.data[i] + 0.587 * data.data[i + 1] + 0.114 * data.data[i + 2];
+        const v = jas < 160 ? 0 : 255;
+        data.data[i] = data.data[i + 1] = data.data[i + 2] = v;
+        data.data[i + 3] = 255;
+    }
+    c.putImageData(data, 0, 0);
+    return off;
+}
+
+async function obnovPadNahled() {
+    const cil = document.getElementById('pad-canvas');
+    const off = await kresliPadKompozice(cil.width, cil.height);
+    const ctx = cil.getContext('2d');
+    ctx.clearRect(0, 0, cil.width, cil.height);
+    ctx.drawImage(off, 0, 0);
+}
+
+async function vyberLogo() {
+    const r = await ipcRenderer.invoke('logo-vyber-soubor');
+    if (!r) return;
+    n.logo = r.cesta;
+    logoNahled = r.dataUrl;
+    document.getElementById('p-logo-box').innerHTML = r.dataUrl ? `<img src="${r.dataUrl}">` : '<small>náhled není k dispozici</small>';
+    nastavDirty(true);
+    obnovNahled();
+}
+
+async function vyberPadObrazek() {
+    const r = await ipcRenderer.invoke('tablet-obrazek-vyber');
+    if (!r) return;
+    n.tabletObrazek = r.cesta;
+    tabletNahled = r.dataUrl;
+    nastavDirty(true);
+    vykresliPanel();
+    obnovPadNahled();
+}
+
+async function zrusPadObrazek() {
+    n.tabletObrazek = null;
+    tabletNahled = null;
+    nastavDirty(true);
+    vykresliPanel();
+    obnovPadNahled();
+}
+
+async function vzhledZWebu() {
+    const s = document.getElementById('p-web-stav');
+    const url = document.getElementById('p-web').value.trim();
+    if (!url) { s.className = 'stav chyba'; s.innerText = 'Zadejte adresu webu vaší firmy, např. www.firma.cz.'; return; }
+    s.className = 'stav info'; s.innerText = 'Chvilku strpení – načítám web a připravuji návrhy…';
+    try {
+        const v = await ipcRenderer.invoke('vzhled-z-webu', { url });
+        n.zdroj = v.zdroj;
+        aiPalety = (v.palety || []).map(p => ({ ...p, ai: true, font: v.font || null }));
+        if (v.logo) { n.logo = v.logo; logoNahled = v.logoNahled || logoNahled; }
+        if (v.companyName && !n.companyName) n.companyName = v.companyName;
+        if (v.font) { n.font = v.font; nactiWebFont(v.font); }
+        if (aiPalety.length) {
+            n.primarni = aiPalety[0].primarni; n.akcent = aiPalety[0].akcent;
+            n.pozadi = aiPalety[0].pozadi; n.text = aiPalety[0].text;
+        }
+        nastavDirty(true);
+        otevrenaSekce = 'vzhled';
+        vykresliPanel();
+        prepniNahled();
+        const sekceVzhled = document.getElementById('sekce-vzhled');
+        if (sekceVzhled) sekceVzhled.scrollIntoView({ behavior: 'smooth' });
+    } catch (e) { s.className = 'stav chyba'; s.innerText = 'Nepovedlo se: ' + e.message; }
+}
+
+function vyberJazyk(l) {
+    n.jazyk = l;
+    nahledJazykAktualni = l;
+    nastavDirty(true);
+    vykresliPanel();
+}
+
+async function padTest() {
+    const s = document.getElementById('p-pad-stav');
+    s.className = 'stav info'; s.innerText = 'Připojuji tablet…';
+    let stu = null, device = null;
+    try {
+        const path = require('path');
+        const factory = require(path.join(__dirname, 'node_modules', '@wacom', 'signature-sdk', 'dist', 'signature-sdk.cjs'));
+        const sdk = (typeof factory === 'function') ? await factory()
+            : (factory && typeof factory.default === 'function') ? await factory.default() : factory;
+
+        device = (await navigator.hid.getDevices()).find(d => d.vendorId === 0x056A);
+        if (!device) {
+            const vyber = await navigator.hid.requestDevice({ filters: [{ vendorId: 0x056A }] });
+            device = vyber && vyber[0];
+        }
+        if (!device) throw new Error('Tablet nenalezen. Zkontrolujte USB kabel.');
+        try { if (device.opened) await device.close(); } catch (e) {}
+
+        stu = new sdk.STUDevice(device);
+        await stu.connect(false);
+        let cap = null;
+        for (let i = 0; i < 10; i++) {
+            try { cap = await Promise.resolve(stu.getCapability()); } catch (e) { cap = null; }
+            if (cap && cap.screenWidth) break;
+            await new Promise(r => setTimeout(r, 150));
+        }
+        const W = (cap && cap.screenWidth) ? cap.screenWidth : 320;
+        const H = (cap && cap.screenHeight) ? cap.screenHeight : 200;
+        const off = await kresliPadKompozice(W, H);
+        let vec = null;
+        try {
+            vec = await Promise.resolve(sdk.ProtocolHelper.resizeAndFlatten(
+                off, 0, 0, W, H, W, H,
+                sdk.EncodingMode.EncodingMode_1bit, sdk.Scale.Scale_Stretch, 'white', 0, false
+            ));
+            await Promise.resolve(stu.writeImage(sdk.EncodingMode.EncodingMode_1bit, vec));
+        } finally { try { if (vec && typeof vec.delete === 'function') vec.delete(); } catch (e) {} }
+        s.className = 'stav ok'; s.innerText = 'Zobrazeno na tabletu.';
+    } catch (e) {
+        s.className = 'stav chyba'; s.innerText = 'Nepovedlo se: ' + (e.message || e);
+    } finally {
+        try { if (stu) await Promise.resolve(stu.disconnect()); } catch (e) {}
+        try { if (device && device.opened) await device.close(); } catch (e) {}
+    }
+}
+
+async function ulozit() {
+    ulozPole();
+    const btn = document.getElementById('btn-ulozit');
+    const s = document.getElementById('stav-zmen');
+    btn.disabled = true;
+    s.innerText = 'Ukládám…';
+    try {
+        await ipcRenderer.invoke('vzhled-uloz', {
+            companyName: n.companyName, primarni: n.primarni, akcent: n.akcent,
+            pozadi: n.pozadi, text: n.text, font: n.font || null,
+            logo: n.logo || null, zdroj: n.zdroj || '',
+            tabletObrazek: n.tabletObrazek || null,
+            tabletText1: n.tabletText1, tabletText2: n.tabletText2
+        });
+        const zapisApp = { LANG: n.jazyk, COMPANY_NAME: n.companyName };
+        if (n.adminPin) zapisApp.ADMIN_PIN = n.adminPin;
+        zapisApp.SSH_CIL = n.sshCil || '';
+        await ipcRenderer.invoke('env-zapis', 'aplikace', zapisApp);
+        await ipcRenderer.invoke('autostart', n.autostart);
+
+        const spravaZmenena = n.noveHeslo || n.spravaZapnuta !== puvodni.spravaZapnuta || n.adminPovoleneIp !== puvodni.adminPovoleneIp;
+
+        const rozdil = (ted, driv) => {
+            const zmeny = {};
+            for (const [k, v] of Object.entries(ted)) if (String(driv[k] ?? '') !== String(v)) zmeny[k] = v;
+            return zmeny;
+        };
+        const zmenyApl = rozdil(envAplikace, envAplikacePuvodni);
+        const zmenySrv = rozdil(envServer, envServerPuvodni);
+        if (Object.keys(zmenyApl).length) await ipcRenderer.invoke('env-zapis', 'aplikace', zmenyApl);
+
+        if (spravaZmenena || Object.keys(zmenySrv).length) {
+            const zapisSrv = { ...zmenySrv, ADMIN_ENABLED: n.spravaZapnuta ? 1 : 0, ADMIN_POVOLENE_IP: n.adminPovoleneIp || '' };
+            if (n.noveHeslo) zapisSrv.ADMIN_HESLO = n.noveHeslo;
+            await ipcRenderer.invoke('env-zapis', 'server', zapisSrv);
+            s.innerText = 'Restartuji server…';
+            await ipcRenderer.invoke('server-restart');
+            n.noveHeslo = '';
+            const heslo = document.getElementById('p-heslo');
+            if (heslo) heslo.value = '';
+        }
+        envAplikacePuvodni = JSON.parse(JSON.stringify(envAplikace));
+        envServerPuvodni = JSON.parse(JSON.stringify(envServer));
+
+        await ipcRenderer.invoke('obnov-kiosek');
+        puvodni = JSON.parse(JSON.stringify(n));
+        nastavDirty(false);
+        s.innerText = 'Uloženo ✓ – kiosek už jede s novým vzhledem';
+        setTimeout(() => { if (!dirty) s.innerText = 'Vše uloženo'; }, 4000);
+    } catch (e) {
+        s.innerText = 'Uložení selhalo: ' + e.message;
+        btn.disabled = false;
+    }
+}
+
+async function nactiVse() {
+    try {
+        const ea = await ipcRenderer.invoke('env-cti', 'aplikace');
+        const es = await ipcRenderer.invoke('env-cti', 'server');
+        const t = await ipcRenderer.invoke('vzhled-cti');
+
+        envAplikace = { ...Object.fromEntries(ENV_KLICE_APLIKACE.map(k => [k, ''])), ...ea };
+        envServer = { ...Object.fromEntries(ENV_KLICE_SERVER.map(k => [k, ''])), ...es };
+        envAplikacePuvodni = JSON.parse(JSON.stringify(envAplikace));
+        envServerPuvodni = JSON.parse(JSON.stringify(envServer));
+
+        n.jazyk = ea.LANG || 'cs';
+        n.adminPin = ea.ADMIN_PIN || '';
+        n.companyName = (t && t.companyName) || ea.COMPANY_NAME || '';
+        n.spravaZapnuta = (es.ADMIN_ENABLED || '1') !== '0';
+        n.adminPovoleneIp = es.ADMIN_POVOLENE_IP || '';
+        n.sshCil = ea.SSH_CIL || '';
+        n.rezim = ea.REZIM || '';
+        if (jeServer()) {
+            document.getElementById('hlava-firma').innerText = 'Nastavení serveru';
+        }
+        n.noveHeslo = '';
+        n.autostart = await ipcRenderer.invoke('autostart-stav');
+
+        if (t) {
+            if (t.primarni) n.primarni = t.primarni;
+            if (t.akcent) n.akcent = t.akcent;
+            if (t.pozadi) n.pozadi = t.pozadi;
+            if (t.text) n.text = t.text;
+            n.font = t.font || null;
+            n.logo = t.logo || null;
+            n.zdroj = t.zdroj || '';
+            n.tabletObrazek = t.tabletObrazek || null;
+            if (t.tabletText1 !== undefined && t.tabletText1 !== null) n.tabletText1 = t.tabletText1;
+            if (t.tabletText2 !== undefined && t.tabletText2 !== null) n.tabletText2 = t.tabletText2;
+        }
+        logoNahled = n.logo ? await ipcRenderer.invoke('logo-data', n.logo) : null;
+        tabletNahled = n.tabletObrazek ? await ipcRenderer.invoke('logo-data', n.tabletObrazek) : null;
+        if (n.font) nactiWebFont(n.font);
+
+        nahledJazykAktualni = n.jazyk;
+        puvodni = JSON.parse(JSON.stringify(n));
+        nastavDirty(false);
+        vykresliPanel();
+        prepniNahled();
+    } catch (e) {
+        document.getElementById('stav-zmen').innerText = 'Načtení selhalo: ' + e.message;
+    }
+}
+
+async function odemkni() {
+    const heslo = document.getElementById('zamek-heslo').value;
+    const chyba = document.getElementById('zamek-chyba');
+    if (!heslo) { chyba.innerText = 'Zadejte heslo.'; return; }
+    try {
+        const ok = await ipcRenderer.invoke('over-heslo-spravy', heslo);
+        if (ok) {
+            document.getElementById('zamek').style.display = 'none';
+            nactiVse();
+        } else { chyba.innerText = 'Nesprávné heslo.'; document.getElementById('zamek-heslo').value = ''; }
+    } catch (e) { chyba.innerText = e.message; }
+}
+
+(async () => {
+    try {
+        const jeHeslo = await ipcRenderer.invoke('existuje-heslo-spravy');
+        if (jeHeslo) {
+            document.getElementById('zamek').style.display = 'flex';
+            document.getElementById('zamek-heslo').focus();
+        } else {
+            nactiVse();
+        }
+    } catch (e) { nactiVse(); }
+})();
+</script>
+<div class="modal-pozadi" id="modal-pozadi" onclick="if(event.target===this)zavriNapovedu()">
+    <div class="modal">
+        <h3 id="modal-titulek"></h3>
+        <div id="modal-telo"></div>
+        <div class="patka">
+            <button class="b-blue b-mini" id="modal-odkaz" style="display:none;"></button>
+            <button class="b-out b-mini" onclick="zavriNapovedu()">Zavřít</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>
