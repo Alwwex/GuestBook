@@ -42,7 +42,7 @@ const CONFIG = {
         connectionLimit: 10,
         charset: 'utf8mb4'
     },
-    SIGNATURES_DIR: path.join(__dirname, 'signatures'),
+    SIGNATURES_DIR: process.env.SIGNATURES_DIR || path.join(__dirname, 'signatures'),
     RATE_LIMIT_WINDOW_MS: 60 * 1000,
     RATE_LIMIT_MAX: 120,
     RATE_LIMIT_MAX_STRICT: 10,
